@@ -8,23 +8,23 @@
 
     <script type="text/javascript">
     $(document).ready(function() {
-      $('#calendar').fullCalendar({
-        header: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'agendaWeek,agendaDay,month'
-        },
-        events: [
-        {
-          title: 'All Day Event',
-          start: '2016-12-01'
-        }],
-        defaultDate: '2016-12-12',
-        navLinks: true,
-        selectable: true,
-        selectHelper: true,
-		select: function(start, end) {
-			var title = prompt('Event Title:');
+		$('#calendar').fullCalendar({
+			header: {
+			  left: 'prev, next, today',
+			  center: 'title', 
+			  right: 'agendaWeek,agendaDay,month'
+			},
+			events: [ // Specify pre-made events here
+			{
+			   title: 'All Day Event',
+			   start: '2016-12-01'
+			}],
+			defaultView: 'agendaWeek',
+			navLinks: true,
+			selectable: true,
+			selectHelper: true,
+			select: function(start, end, jsEvent) {
+				var title = prompt("Event Title");
 				var eventData;
 				if (title) {
 					eventData = {
@@ -35,14 +35,11 @@
 					$('#calendar').fullCalendar('renderEvent', eventData, true);
 				}
 				$('#calendar').fullCalendar('unselect');
-		},
-        editable: true,
-        eventLimit: true,
-      })
+			},
+			editable: true,
+			eventLimit: true,
+		})
     });
     </script>
   </head>
-  <body>
-    <div id='calendar'></div>
-  </body>
 </html>
