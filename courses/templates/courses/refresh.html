@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; Refresh Course Schedules
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+<p>This operation will retrieve course schedule data from
+<a href="https://explorecourses.stanford.edu">ExploreCourses</a> and populate the course schedule
+cache, replacing the old contents.  Note that:
+<ul>
+<li>The cache will be left intact if an error occurs.</li>
+<li>This operation does not affect user calendars, even if a course's schedule has changed.</li>
+<li>This operation might take a while.</li>
+</ul>
+</p>
+</div>
+
+<form method="post">{% csrf_token %}
+  <input type="submit" value="Refresh now" />
+</form>
+{% endblock %}
+
+{% endif %}
+

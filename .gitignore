@@ -1,0 +1,7 @@
+*.un~
+*.py[cod]
+*.swp
+db.sqlite3*
+courses/scraper/courses*.xml
+courses/scraper/courses*.html
+courses/scraper/*.p
