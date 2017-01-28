@@ -4,13 +4,21 @@
 	text-align:center;
 }
 
+.form-add-class {
+  max-width: 380px;
+  padding: 30px 38px 66px;
+  margin: 0 auto;
+  background-color: #eee;
+  border: 3px dotted rgba(0,0,0,0.1);  
+}
+
 .form-signin {
   max-width: 420px;
   padding: 30px 38px 66px;
   margin: 0 auto;
   background-color: #eee;
   border: 3px dotted rgba(0,0,0,0.1);  
-  }
+}
 
 .form-signin-heading {
   text-align:center;
@@ -42,6 +50,19 @@ input[type="password"] {
     border: none;
     color: white;
     padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
+.small-button {
+	background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 5px 16px;
     text-align: center;
     text-decoration: none;
     display: inline-block;
