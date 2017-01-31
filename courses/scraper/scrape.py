@@ -5,11 +5,11 @@ import pickle
 import re
 import urllib2
 
-from course_objects import *
+from .course_objects import *
 
-XML_FILE = 'courses.xml'
+XML_FILE = 'courses/scraper/courses.xml'
 XML_URL = r'http://explorecourses.stanford.edu/search?view=xml&filter-coursestatus-Active=on&page=0&academicYear=&q=%'
-HTML_FILE = 'courses.html'
+HTML_FILE = 'courses/scraper/courses.html'
 HTML_URL = r'http://explorecourses.stanford.edu/print?filter-coursestatus-Active=on&schedules=on&q=%'
 
 def parse_term(term_str):
@@ -22,15 +22,16 @@ def parse_term(term_str):
     assert year + 1 == int(match_obj.group(2))
     return Term(year, quarter=match_obj.group(3))
 
-def get_data(url, filename):
+def get_data(url, filename=None):
     """
-    If `filename` exists, returns its contents.  Otherwise, fetches from `url`, stores contents in
-    `filename`, and returns contents.
+    If `filename` exists (and not None), returns its contents.  Otherwise, fetches from `url`,
+    stores contents in `filename`, and returns contents.
     """
-    if not os.path.exists(filename):
+    if (filename is None) or (not os.path.exists(filename)):
         data = urllib2.urlopen(url).read()
-        with open(filename, "w") as f:
-            f.write(data)
+        if filename is not None:
+            with open(filename, "w") as f:
+                f.write(data)
         return data
     else:
         with open(filename, "r") as f:
@@ -103,24 +104,29 @@ def extract_course_schedules():
     """
     Returns a Dict mapping class_id to Schedule.
     """
-    course_html = get_data(HTML_URL, HTML_FILE)
+    # course_html = get_data(HTML_URL, HTML_FILE)
+    course_html = get_data(HTML_URL)
     soup = BeautifulSoup(course_html, 'lxml')
     schedules = {}  # class_id => Schedule.
     for s in soup.find_all('li', class_='sectionDetails'):
         parsed = parse_section_details(s)
         if parsed:
             key = parsed[0]
-            print(key)
+            # print(key)
             assert key not in schedules
             schedules[key] = parsed[1]
+
+    print("Schedules parsed.")
 
     return schedules
 
 def extract_courses():
     schedules = extract_course_schedules()
 
-    courses_xml = get_data(XML_URL, XML_FILE)
+    # courses_xml = get_data(XML_URL, XML_FILE)
+    courses_xml = get_data(XML_URL)
     soup = BeautifulSoup(courses_xml, 'lxml-xml')
+    print("Other info parsed.")
     for c in soup.find_all('course'):
         subject = c.subject.get_text()
         code = c.code.get_text()
