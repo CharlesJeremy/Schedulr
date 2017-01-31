@@ -13,6 +13,7 @@ from django.views.decorators.cache import never_cache
 from .models import Event
 import re
 from courses.models import Course, Section
+from courses.utils import Quarter
 
 class HttpResponseUnauthorized(HttpResponse):
     """
@@ -42,15 +43,20 @@ def ajax_login_required(view_func):
         return HttpResponseUnauthorized(json, content_type='application/json')
     return wrapper
 
-def add_all_events_for_course(user, user_input, term_year, term_quarter):
+def add_all_events_for_course(user, user_input):
     course = get_course(user_input);
     if course is None:
         return
-    sections = get_sections(course, term_year, term_quarter)
+    term = get_term()
+    sections = get_sections(course, term)
     events = []
     for section in sections:
-        event += add_section_events(user, section)
+        events += add_section_events(user, section)
     return events
+
+def get_term():
+    # Hardcoded for now 
+    return (2016, Quarter.WINTER)
 
 def get_course(user_input):
     """ Given a user string such as CS194, gets the course object
@@ -65,15 +71,17 @@ def get_course(user_input):
     # Otherwise we assume there is only one matching course
     return result.get()
 
-def get_sections(course, term_year, term_quarter):
+def get_sections(course, term):
     """ Given a valid course object and term year/quarter, gets the related
     sections from the database """
+    term_year = term[0]
+    term_quarter = term[1]
     result = Section.objects.filter(course = course, term_year = term_year,
             term_quarter = term_quarter)
     return list(result)
     
 
-def add_section_event(user, section):
+def add_section_events(user, section):
     """ Given a user and section object, adds and returns all relevant 
     events for the quarter to the database """
     events = []
