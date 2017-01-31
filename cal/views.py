@@ -1,3 +1,5 @@
+import datetime
+from datetime import timedelta
 from functools import wraps
 import re
 import simplejson
@@ -7,11 +9,11 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse
 from django.http.response import HttpResponseBadRequest
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 
 from .models import Event
-import re
 from courses.models import Course, Section
 from courses.utils import Quarter
 
@@ -51,7 +53,7 @@ def add_all_events_for_course(user, user_input):
     sections = get_sections(course, term)
     events = []
     for section in sections:
-        events += add_section_events(user, section)
+        events += add_section_events(user, course, section)
     return events
 
 def get_term():
@@ -79,13 +81,31 @@ def get_sections(course, term):
     result = Section.objects.filter(course = course, term_year = term_year,
             term_quarter = term_quarter)
     return list(result)
-    
 
-def add_section_events(user, section):
+def daterange(start_date, end_date):
+    """ Taken from
+    http://stackoverflow.com/questions/1060279/iterating-through-a-range-of-dates-in-python """
+    for n in range(int ((end_date - start_date).days)):
+        yield start_date + timedelta(n)
+
+def add_section_events(user, course, section):
     """ Given a user and section object, adds and returns all relevant 
     events for the quarter to the database """
+    try:
+        schedule = section.schedule
+    except: # TODO(zhangwen): proper exception
+        return []
+
     events = []
-    # TODO (rwang7) finish this
+    for date in daterange(schedule.start_date, schedule.end_date):
+        if date.weekday() in schedule.days_of_week:
+            Event.objects.create(
+                    course=course, user=user,
+                    name=unicode(course),
+                    location=schedule.location,
+                    start_time=datetime.datetime.combine(date, schedule.start_time),
+                    end_time=datetime.datetime.combine(date, schedule.end_time))
+
     return events
 
 # --- VIEWS ---
@@ -94,6 +114,14 @@ def add_section_events(user, section):
 def index(request):
     return render(request, 'cal/cal.html')
 
+@login_required
+@require_POST
+def add_course(request):
+    # TODO(zhangwen): proper error message.
+    course_str = request.POST['event_title'] # TODO(zhangwen): call it sth else
+    add_all_events_for_course(request.user, course_str)
+    return redirect('/')
+
 @ajax_login_required
 def get_event_feed(request):
     start = request.GET.get('start')
@@ -101,7 +129,6 @@ def get_event_feed(request):
         return HttpJsonResponseBadRequest("\"start\" param missing.")
     try:
         start_dt = dateutil.parser.parse(start) # datetime
-        print(start_dt)
     except (ValueError, OverflowError) as e:
         return HttpJsonResponseBadRequest("\"start\" param invalid: %s." % e)
 
@@ -110,7 +137,6 @@ def get_event_feed(request):
         return HttpJsonResponseBadRequest("\"end\" param missing.")
     try:
         end_dt = dateutil.parser.parse(end) # datetime
-        print(end_dt)
     except (ValueError, OverflowError) as e:
         return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
 
