@@ -15,11 +15,12 @@
 			  center: 'title', 
 			  right: 'agendaWeek,agendaDay,month'
 			},
-			events: [ // Specify pre-made events here
-			{
-			   title: 'All Day Event',
-			   start: '2016-12-01'
-			}],
+			eventClick: function(calEvent, jsEvent, view) {
+				var title = prompt("Update event title");
+				calEvent.title = title;
+				$('#calendar').fullCalendar('updateEvent', calEvent);
+			},
+			events: '/myfeed.php', //Fetches events as a json feed from this url
 			defaultView: 'agendaWeek',
 			navLinks: true,
 			selectable: true,
