@@ -11,7 +11,8 @@ from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 
 from .models import Event
-from courses.models import Course
+import re
+from courses.models import Course, Section
 
 class HttpResponseUnauthorized(HttpResponse):
     """
@@ -41,15 +42,43 @@ def ajax_login_required(view_func):
         return HttpResponseUnauthorized(json, content_type='application/json')
     return wrapper
 
-def get_course(user_string):
+def add_all_events_for_course(user, user_input, term_year, term_quarter):
+    course = get_course(user_input);
+    if course is None:
+        return
+    sections = get_sections(course, term_year, term_quarter)
+    events = []
+    for section in sections:
+        event += add_section_events(user, section)
+    return events
+
+def get_course(user_input):
     """ Given a user string such as CS194, gets the course object
     from the database; also handles variations such as CS 194 and cs194"""
-    user_string.replace(" ", "");
-    index = re.search("\d", user_string).start();
-    subject = user_string[:index].upper()
-    code = user_string[index:].upper()
+    user_input.replace(" ", "");
+    index = re.search("\d", user_input).start();
+    subject = user_input[:index].upper()
+    code = user_input[index:].upper()
     result = Course.objects.filter(subject = subject, code = code)
-    return result
+    if len(result) == 0:
+        return None
+    # Otherwise we assume there is only one matching course
+    return result.get()
+
+def get_sections(course, term_year, term_quarter):
+    """ Given a valid course object and term year/quarter, gets the related
+    sections from the database """
+    result = Section.objects.filter(course = course, term_year = term_year,
+            term_quarter = term_quarter)
+    return list(result)
+    
+
+def add_section_event(user, section):
+    """ Given a user and section object, adds and returns all relevant 
+    events for the quarter to the database """
+    events = []
+    # TODO (rwang7) finish this
+    return events
 
 # --- VIEWS ---
 @login_required
@@ -92,3 +121,4 @@ def get_event_feed(request):
 
     json = simplejson.dumps(json_events)
     return HttpResponse(json, content_type='application/json')
+
