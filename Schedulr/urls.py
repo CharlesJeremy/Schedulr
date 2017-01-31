@@ -15,12 +15,17 @@ Including another URLconf
 """
 from django.conf import settings
 from django.conf.urls import url, include
+from django.conf.urls.static import static
 from django.contrib import admin
+from django.http.response import HttpResponseRedirect
 
 admin.site.site_header = settings.ADMIN_SITE_HEADER
 
 urlpatterns = [
-    url(r'^cal/', include('cal.urls')),
+    url(r'^$', lambda r: HttpResponseRedirect('cal/')),
+    url(r'^cal/', include('cal.urls', namespace='cal')),
+    url(r'^accounts/', include('registration.urls', namespace='registration')),
     url(r'^admin/', admin.site.urls),
     url(r'^_nested_admin/', include('nested_admin.urls')),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# TODO(zhangwen): serving static asset--only for development.
