@@ -4,14 +4,6 @@
 	text-align:center;
 }
 
-.form-add-class {
-  max-width: 380px;
-  padding: 30px 38px 66px;
-  margin: 0 auto;
-  background-color: #eee;
-  border: 3px dotted rgba(0,0,0,0.1);  
-}
-
 .form-signin {
   max-width: 420px;
   padding: 30px 38px 66px;
@@ -90,7 +82,3 @@ input[type="password"] {
 #62c2e4 87.5%, #62c2e4);
 }
 
-#enter-class {
-	float: left;
-	padding: 10px;
-}

@@ -1,8 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
   <head>
     <link rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.css' />
-	<link rel='stylesheet' href='styles.css' />
+    <link rel='stylesheet' href='{% static "styles.css" %}' />
+    <link rel='stylesheet' href='{% static "cal/cal.css" %}' />
     <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.js'></script>
@@ -10,6 +12,8 @@
     <script type="text/javascript">
     $(document).ready(function() {
 		$('#calendar').fullCalendar({
+      height: 'parent',
+      nowIndicator: true,
 			header: {
 			  left: 'prev, next, today',
 			  center: 'title', 
@@ -20,7 +24,7 @@
 				calEvent.title = title;
 				$('#calendar').fullCalendar('updateEvent', calEvent);
 			},
-			events: '/myfeed.php', //Fetches events as a json feed from this url
+			events: '/cal/get_event_feed', //Fetches events as a json feed from this url
 			defaultView: 'agendaWeek',
 			navLinks: true,
 			selectable: true,
@@ -44,19 +48,19 @@
     });
     </script>
   </head>
-  <h2> 
-	<form id="enter-class" class="form-add-class" name="enter-class" action=""> 
-	<td class="form-signin-heading"> Enter a class (e.g., CS103): <input name="event_title" type="text" id="event_title" /> </td>
-	<button class="small-button"  name="Submit" value="Enter" type="Submit">Add class</button> 
-	</form>
-  </h2>
-  </br>
-  </br>
-  </br>
-  </br>
-  </br>
-  </br>
   <body>
-    <div id='calendar'></div>
+    <div class="box">
+      <div class="row header">
+        <form id="enter-class" class="form-add-class" name="enter-class" action=""> 
+        <span class="form-signin-heading"> Enter a class (e.g., CS103):
+          <input name="event_title" type="text" id="event_title" /> </span>
+          <button class="small-button"  name="Submit" value="Enter" type="Submit">Add class</button> 
+        </form>
+      </div>
+
+      <div class="row content">
+        <div id='calendar'></div>
+      </div>
+    </div>
   </body>
 </html>
