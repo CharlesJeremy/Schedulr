@@ -1,0 +1,33 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.box {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+
+.box .row.header {
+  flex: 0 1 auto;
+}
+
+.box .row.content {
+  flex: 1 1 auto;
+  margin: 10px;
+}
+
+.form-add-class {
+  max-width: 380px;
+  margin: 10px;
+  background-color: #eee;
+  border: 3px dotted rgba(0,0,0,0.1);  
+}
+
+#enter-class {
+	padding: 10px;
+  font-weight: bold;
+  font-size: 1.5em;
+}
