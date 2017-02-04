@@ -51,7 +51,9 @@
   <body>
     <div class="box">
       <div class="row header">
-        <form id="enter-class" class="form-add-class" name="enter-class" action=""> 
+        <form id="enter-class" class="form-add-class" name="enter-class" action="/cal/add_course"
+          method="post"> 
+          {% csrf_token %}
         <span class="form-signin-heading"> Enter a class (e.g., CS103):
           <input name="event_title" type="text" id="event_title" /> </span>
           <button class="small-button"  name="Submit" value="Enter" type="Submit">Add class</button> 
