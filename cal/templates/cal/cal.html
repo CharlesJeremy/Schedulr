@@ -49,9 +49,14 @@
     </script>
   </head>
   <body>
+  	<div class="upper-right">
+  		<button class="button" name="Logout" value="Logout" type="Submit">Logout</button> 
+  	</div>
+
     <div class="box">
       <div class="row header">
-        <form id="enter-class" class="form-add-class" name="enter-class" action="/cal/add_course"
+        <form id="enter-class" class="form-add-class" name="ent
+        er-class" action="/cal/add_course"
           method="post"> 
           {% csrf_token %}
         <span class="form-signin-heading"> Enter a class (e.g., CS103):
