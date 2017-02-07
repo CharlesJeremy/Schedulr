@@ -5,10 +5,10 @@
     <link rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.css' />
     <link rel='stylesheet' href='{% static "styles.css" %}' />
     <link rel='stylesheet' href='{% static "cal/cal.css" %}' />
+
     <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.js'></script>
-
     <script type="text/javascript">
     $(document).ready(function() {
 		$('#calendar').fullCalendar({
@@ -49,9 +49,10 @@
     </script>
   </head>
   <body>
-  	<div class="upper-right">
+  	<form id="logout" class="upper-right" action="/accounts/logout/" method="post">
+  		{% csrf_token %}
   		<button class="button" name="Logout" value="Logout" type="Submit">Logout</button> 
-  	</div>
+  	</form>
 
     <div class="box">
       <div class="row header">
