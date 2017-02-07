@@ -156,3 +156,32 @@ def get_event_feed(request):
     json = simplejson.dumps(json_events)
     return HttpResponse(json, content_type='application/json')
 
+@require_POST
+@ajax_login_required
+def add_event(request):
+    title = request.POST.get('title')
+    if not title:
+        return HttpJsonResponseBadRequest("\"title\" param missing.")
+
+    # TODO(zhangwen): de-duplicate this?
+    start = request.POST.get('start')
+    if start is None:
+        return HttpJsonResponseBadRequest("\"start\" param missing.")
+    try:
+        start_dt = dateutil.parser.parse(start) # datetime
+    except (ValueError, OverflowError) as e:
+        return HttpJsonResponseBadRequest("\"start\" param invalid: %s." % e)
+
+    end = request.POST.get('end')
+    if end is None:
+        return HttpJsonResponseBadRequest("\"end\" param missing.")
+    try:
+        end_dt = dateutil.parser.parse(end) # datetime
+    except (ValueError, OverflowError) as e:
+        return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
+
+    # TODO(zhangwen): error handling, e.g. title too long.
+    Event.objects.create(user=request.user, name=title, start_time=start_dt, end_time=end_dt)
+
+    json = simplejson.dumps({'success': 'true'})
+    return HttpResponse(json, content_type='application/json')
