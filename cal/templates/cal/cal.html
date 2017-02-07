@@ -34,10 +34,15 @@
 				$('#editEventBtn').click(function() {
 	    			calEvent.title = $('#editEventTitle').val();
 	  				$('#calendar').fullCalendar('updateEvent', calEvent);
-	  				$('#dialog').dialog("close");
+	  				$('#dialog').dialog("close");	            	
 	            });
 	            $('#delete-event-btn').click(function() {
-					$('#calendar').fullCalendar('removeEvents', calEvent.id);
+	            	if (typeof calEvent.id == 'undefined') {
+	            		alert("Event id is undefined!");
+	            	}
+	            	else {
+						$('#calendar').fullCalendar('removeEvents', calEvent.id);
+					}
 					$('#dialog').dialog("close");
 				})
 			},
