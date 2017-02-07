@@ -97,3 +97,11 @@ class Schedule(models.Model):
     end_time = models.TimeField() # e.g. 14:50.
     location = models.CharField(max_length=100, null=True, blank=True) # e.g. "School of Education 334".
 
+    def __unicode__(self):
+        str_repr = "%s--%s, %s %s--%s" % (self.start_date, self.end_date, self.days_of_week,
+                self.start_time, self.end_time)
+        if self.location:
+            str_repr += " at %s" % self.location
+
+        return str_repr
+
