@@ -84,10 +84,10 @@
 			},
 			editable: true,
 			eventLimit: true,
-		}),
-		$('#dialog').dialog(),
-		$('#dialog').dialog("close"),
-	  $('#startTimePicker').timepicker({ 'scrollDefault': 'now' })
+		});
+
+    $('#dialog').dialog({ autoOpen: false });
+	  $('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
     });
     </script>
   </head>
@@ -108,7 +108,7 @@
           <button name="Submit" value="Enter" type="Submit">Add class</button> 
         </form>
       </div>
-      <div id="dialog" title="Edit event">
+      <div id="dialog" style="display: none" title="Edit event">
       	<p>Title: <input type="text" id="editEventTitle"></p>
       	<p>Start time: <input type="text" id="startTimePicker"></p>
       	<p>End time: <input type="text" id="endTimePicker"></p>
