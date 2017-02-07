@@ -5,11 +5,17 @@
     <link rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.css' />
     <link rel='stylesheet' href='{% static "styles.css" %}' />
     <link rel='stylesheet' href='{% static "cal/cal.css" %}' />
+    <link rel='stylesheet' href='{% static "cal/jquery.timepicker.css" %}' />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 
     <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.js'></script>
+    <script src='{% static "cal/jquery.timepicker.min.js" %}'> </script>
+
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script type="text/javascript">
+
     $(document).ready(function() {
 		$('#calendar').fullCalendar({
       height: 'parent',
@@ -20,9 +26,20 @@
 			  right: 'agendaWeek,agendaDay,month'
 			},
 			eventClick: function(calEvent, jsEvent, view) {
-				var title = prompt("Update event title");
-				calEvent.title = title;
-				$('#calendar').fullCalendar('updateEvent', calEvent);
+				$('#dialog').dialog("destroy");
+				$('#dialog').dialog();
+				$('#editEventTitle').val(""); //Clear previous input
+				$('#editEventBtn').off(); //Remove all previous handlers from the buttons
+				$('#delete-event-btn').off();
+				$('#editEventBtn').click(function() {
+	    			calEvent.title = $('#editEventTitle').val();
+	  				$('#calendar').fullCalendar('updateEvent', calEvent);
+	  				$('#dialog').dialog("close");
+	            });
+	            $('#delete-event-btn').click(function() {
+					$('#calendar').fullCalendar('removeEvents', calEvent.id);
+					$('#dialog').dialog("close");
+				})
 			},
 			events: '/cal/get_event_feed', //Fetches events as a json feed from this url
 			defaultView: 'agendaWeek',
@@ -44,7 +61,10 @@
 			},
 			editable: true,
 			eventLimit: true,
-		})
+		}),
+		$('#dialog').dialog(),
+		$('#dialog').dialog("close"),
+	  $('#startTimePicker').timepicker({ 'scrollDefault': 'now' })
     });
     </script>
   </head>
@@ -62,10 +82,16 @@
           {% csrf_token %}
         <span class="form-signin-heading"> Enter a class (e.g., CS103):
           <input name="event_title" type="text" id="event_title" /> </span>
-          <button class="small-button"  name="Submit" value="Enter" type="Submit">Add class</button> 
+          <button name="Submit" value="Enter" type="Submit">Add class</button> 
         </form>
       </div>
-
+      <div id="dialog" title="Edit event">
+      	<p>Title: <input type="text" id="editEventTitle"></p>
+      	<p>Start time: <input type="text" id="startTimePicker"></p>
+      	<p>End time: <input type="text" id="endTimePicker"></p>
+      	<button class="small-button" name="EditEvent" id="editEventBtn" value="Submit" type="Submit"> Submit </button>
+      	<button class="small-delete-button" name="DeleteEvent" id="delete-event-btn" value="Submit" type="Submit"> Delete Event </button>
+      </div>
       <div class="row content">
         <div id='calendar'></div>
       </div>
