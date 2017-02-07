@@ -196,7 +196,8 @@ def get_event_feed(request):
         if event.section is not None:
             section = event.section
             if section.id not in section_event_ids:
-                first_event_for_section = Event.objects.filter(section=section).order_by('id').first()
+                first_event_for_section = Event.objects.filter(user=request.user,
+                        section=section).order_by('id').first()
                 section_event_ids[section.id] = first_event_for_section.id
 
             event_id = section_event_ids[section.id]
@@ -212,6 +213,30 @@ def get_event_feed(request):
         json_events.append(json_event)
 
     json = simplejson.dumps(json_events)
+    return HttpResponse(json, content_type='application/json')
+
+@require_POST
+@ajax_login_required
+@transaction.atomic
+def delete_event(request):
+    """ Removes all events in the series that Event `event_id` belongs to. """
+    event_id = request.POST.get('event_id')
+    if event_id is None:
+        return HttpJsonResponseBadRequest("\"event_id\" param missing.")
+    try:
+        event_id = int(event_id)
+    except ValueError:
+        return HttpJsonResponseBadRequest("\"event_id\" not a number.")
+
+    # TODO(zhangwen): error handling (event non-existent).
+    event = Event.objects.get(user=request.user, id=event_id)
+    section = event.section
+    if section is None: # Just delete this event.
+        event.delete()
+    else: # Delete all events associated with this section.
+        Event.objects.filter(user=request.user, section=section).delete()
+
+    json = simplejson.dumps({'success': 'true'})
     return HttpResponse(json, content_type='application/json')
 
 @require_POST

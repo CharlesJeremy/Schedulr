@@ -97,12 +97,9 @@
 	  				$('#dialog').dialog("close");	            	
 	            });
 	            $('#delete-event-btn').click(function() {
-	            	if (typeof calEvent.id == 'undefined') {
-	            		alert("Event id is undefined!");
-	            	}
-	            	else {
-						$('#calendar').fullCalendar('removeEvents', calEvent.id);
-					}
+                $.post('/cal/delete_event', { event_id: calEvent.id }, function() {
+                  $('#calendar').fullCalendar('removeEvents', calEvent.id);
+                });
 					$('#dialog').dialog("close");
 				})
 			},
