@@ -198,7 +198,8 @@ def add_event(request):
         return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
 
     # TODO(zhangwen): error handling, e.g. title too long.
-    Event.objects.create(user=request.user, name=title, start_time=start_dt, end_time=end_dt)
+    event = Event.objects.create(
+            user=request.user, name=title, start_time=start_dt, end_time=end_dt)
 
-    json = simplejson.dumps({'success': 'true'})
+    json = simplejson.dumps({'success': 'true', 'id': event.id})
     return HttpResponse(json, content_type='application/json')

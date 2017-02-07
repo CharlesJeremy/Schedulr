@@ -73,10 +73,10 @@
 
           $.post('/cal/add_event', {
             title: title, start: start.format(), end: end.format()
-          }).done(function() {
-            var eventData = { title: title, start: start, end: end };
+          }, function(data) {
+            var eventData = { title: title, start: start, end: end, id: data.id };
             $('#calendar').fullCalendar('renderEvent', eventData, true);
-          }).fail(function(jqXHR, textStatus, errorThrown) {
+          }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
             window.alert('Add event failed: ' + errorThrown);
           });
 				}
