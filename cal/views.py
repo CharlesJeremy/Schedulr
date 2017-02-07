@@ -140,17 +140,34 @@ def get_event_feed(request):
     except (ValueError, OverflowError) as e:
         return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
 
+    # Maps Course id to Event id.
+    # This map exists because events in the same series should have the same id.
+    # If an Event is standalone, then just use its id.  If it's associated with a Course, use the
+    # id of the first Event in that series (stored in this map).
+    # TODO(zhangwen): this isn't pretty; we should probably have an event_id field.
+    course_event_ids = {}
+
     events = Event.objects.filter(Q(user=request.user),
             Q(start_time__range=(start_dt, end_dt)) | Q(end_time__range=(start_dt, end_dt)))
     json_events = []
     for event in events:
+        # See comment for course_event_ids.
+        if event.course is not None:
+            course = event.course
+            if course.id not in course_event_ids:
+                first_event_for_course = Event.objects.filter(course=course).order_by('id').first()
+                course_event_ids[course.id] = first_event_for_course.id
+
+            event_id = course_event_ids[course.id]
+        else:
+            event_id = event.id
+
         json_event = {
+                'id': event_id,
                 'title': event.name,
                 'start': event.start_time.isoformat(),
                 'end': event.end_time.isoformat()
         }
-        if event.course is not None:
-            json_event['id'] = event.course.id # Events in the same series should have the same id.
         json_events.append(json_event)
 
     json = simplejson.dumps(json_events)
