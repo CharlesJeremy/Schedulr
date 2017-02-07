@@ -44,11 +44,18 @@
 			eventClick: function(calEvent, jsEvent, view) {
 				$('#dialog').dialog("destroy");
 				$('#dialog').dialog();
-				$('#editEventTitle').val(""); //Clear previous input
+				$('#editEventTitle').val(calEvent.title); //Defaults to the event's title
+				start = calEvent.start.local().toDate();
+				end = calEvent.end.local().toDate();
+				$('#startTimePicker').timepicker('setTime', start); //Defaults to the event's current start time
+				$('#endTimePicker').timepicker('setTime', end);
 				$('#editEventBtn').off(); //Remove all previous handlers from the buttons
 				$('#delete-event-btn').off();
+
 				$('#editEventBtn').click(function() {
 	    			calEvent.title = $('#editEventTitle').val();
+	    			calEvent.start = $('#startTimePicker').timepicker('getTime', start);
+	    			calEvent.end = $('#endTimePicker').timepicker('getTime', end);
 	  				$('#calendar').fullCalendar('updateEvent', calEvent);
 	  				$('#dialog').dialog("close");	            	
 	            });
@@ -88,6 +95,7 @@
 		$('#dialog').dialog(),
 		$('#dialog').dialog("close"),
 	  $('#startTimePicker').timepicker({ 'scrollDefault': 'now' })
+	  $('#endTimePicker').timepicker({ 'scrollDefault': 'now' })
     });
     </script>
   </head>
