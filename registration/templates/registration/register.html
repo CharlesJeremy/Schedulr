@@ -17,6 +17,7 @@
 <body>
 
 <form class="form-horizontal" action='' method="POST">
+  {% csrf_token %}
   <fieldset>
     <div id="legend">
       <legend class="">Register</legend>
@@ -25,36 +26,42 @@
       <!-- Username -->
       <label class="control-label"  for="username">Username</label>
       <div class="controls">
-        <input type="text" id="username" name="username" placeholder="" class="input-xlarge">
+        <input type="text" id="username" name="username" placeholder="" class="input-xlarge"
+               value="{{ form.username.value|default_if_none:"" }}">
         <p class="help-block">Username can contain any letters or numbers, without spaces</p>
       </div>
+      {{ form.username.errors }}
     </div>
  
     <div class="control-group">
       <!-- E-mail -->
       <label class="control-label" for="email">E-mail</label>
       <div class="controls">
-        <input type="text" id="email" name="email" placeholder="" class="input-xlarge">
+        <input type="text" id="email" name="email" placeholder="" class="input-xlarge"
+               value="{{ form.email.value|default_if_none:"" }}">
         <p class="help-block">Please provide your E-mail</p>
       </div>
+      {{ form.email.errors }}
     </div>
  
     <div class="control-group">
       <!-- Password-->
-      <label class="control-label" for="password">Password</label>
+      <label class="control-label" for="password1">Password</label>
       <div class="controls">
-        <input type="password" id="password" name="password" placeholder="" class="input-xlarge">
+        <input type="password" id="password1" name="password1" placeholder="" class="input-xlarge">
         <p class="help-block">Password should be at least 4 characters</p>
       </div>
+      {{ form.password1.errors }}
     </div>
  
     <div class="control-group">
       <!-- Password -->
-      <label class="control-label"  for="password_confirm">Password (Confirm)</label>
+      <label class="control-label" for="password2">Password (Confirm)</label>
       <div class="controls">
-        <input type="password" id="password_confirm" name="password_confirm" placeholder="" class="input-xlarge">
+        <input type="password" id="password2" name="password2" placeholder="" class="input-xlarge">
         <p class="help-block">Please confirm password</p>
       </div>
+      {{ form.password2.errors }}
     </div>
  
     <div class="control-group">
