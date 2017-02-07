@@ -6,10 +6,11 @@ import simplejson
 
 import dateutil.parser
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.http.response import HttpResponseBadRequest
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -64,7 +65,10 @@ def get_course(user_input):
     """ Given a user string such as CS194, gets the course object
     from the database; also handles variations such as CS 194 and cs194"""
     user_input.replace(" ", "");
-    index = re.search("\d", user_input).start();
+    search = re.search("\d", user_input)
+    if search is None:
+        return None
+    index = search.start();
     subject = user_input[:index].upper()
     code = user_input[index:].upper()
     result = Course.objects.filter(subject = subject, code = code)
@@ -79,7 +83,7 @@ def get_sections(course, term):
     term_year = term[0]
     term_quarter = term[1]
     result = Section.objects.filter(course = course, term_year = term_year,
-            term_quarter = term_quarter)
+            term_quarter = term_quarter).order_by('section_number')
     return list(result)
 
 def daterange(start_date, end_date):
@@ -88,7 +92,7 @@ def daterange(start_date, end_date):
     for n in range(int ((end_date - start_date).days)):
         yield start_date + timedelta(n)
 
-def add_section_events(user, course, section):
+def add_section_events(user, section):
     """ Given a user and section object, adds and returns all relevant 
     events for the quarter to the database """
     try:
@@ -96,12 +100,13 @@ def add_section_events(user, course, section):
     except: # TODO(zhangwen): proper exception
         return []
 
+    course = section.course
     events = []
     for date in daterange(schedule.start_date, schedule.end_date):
         if date.weekday() in schedule.days_of_week:
             Event.objects.create(
-                    course=course, user=user,
-                    name=unicode(course),
+                    section=section, user=user,
+                    name='[%s] %s' % (section.component, course),
                     location=schedule.location,
                     start_time=datetime.datetime.combine(date, schedule.start_time),
                     end_time=datetime.datetime.combine(date, schedule.end_time))
@@ -116,11 +121,47 @@ def index(request):
 
 @login_required
 @require_POST
-def add_course(request):
-    # TODO(zhangwen): proper error message.
-    course_str = request.POST['event_title'] # TODO(zhangwen): call it sth else
-    add_all_events_for_course(request.user, course_str)
+@transaction.atomic
+def add_sections(request):
+    # TODO(zhangwen): error handling
+    section_ids = map(int, request.POST.getlist('sections'))
+    for section in Section.objects.filter(id__in=section_ids):
+        add_section_events(request.user, section)
     return redirect('/')
+
+@ajax_login_required
+def get_sections_for_course(request):
+    course_str = request.GET.get('course_str') # TODO(zhangwen): call it sth else
+    if course_str is None:
+        return HttpJsonResponseBadRequest("\"course_str\" param missing.")
+
+    course = get_course(course_str);
+    if course is None:
+        json = simplejson.dumps({'error': 'No course found.'})
+        return HttpResponse(json, content_type='application/json')
+
+    sections_list = []
+    sections = get_sections(course, get_term())
+    for section in sections:
+        try:
+            schedule = section.schedule
+        except: # TODO(zhangwen): proper exception
+            continue
+
+        sections_list.append({
+            'section_id': section.id,
+            'section_number': section.section_number,
+            'component': section.component or "",
+            'instructors': section.instructors or "",
+            'schedule': unicode(schedule),
+        })
+
+
+    json = simplejson.dumps({
+        'course_title': unicode(course),
+        'sections': sections_list
+    })
+    return HttpResponse(json, content_type='application/json')
 
 @ajax_login_required
 def get_event_feed(request):
@@ -140,17 +181,34 @@ def get_event_feed(request):
     except (ValueError, OverflowError) as e:
         return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
 
+    # Maps Section id to Event id.
+    # This map exists because events in the same series should have the same id.
+    # If an Event is standalone, then just use its id.  If it's associated with a Section, use the
+    # id of the first Event in that series (stored in this map).
+    # TODO(zhangwen): this isn't pretty; we should probably have an event_id field.
+    section_event_ids = {}
+
     events = Event.objects.filter(Q(user=request.user),
             Q(start_time__range=(start_dt, end_dt)) | Q(end_time__range=(start_dt, end_dt)))
     json_events = []
     for event in events:
+        # See comment for section_event_ids.
+        if event.section is not None:
+            section = event.section
+            if section.id not in section_event_ids:
+                first_event_for_section = Event.objects.filter(section=section).order_by('id').first()
+                section_event_ids[section.id] = first_event_for_section.id
+
+            event_id = section_event_ids[section.id]
+        else:
+            event_id = event.id
+
         json_event = {
+                'id': event_id,
                 'title': event.name,
                 'start': event.start_time.isoformat(),
                 'end': event.end_time.isoformat()
         }
-        if event.course is not None:
-            json_event['id'] = event.course.id # Events in the same series should have the same id.
         json_events.append(json_event)
 
     json = simplejson.dumps(json_events)
@@ -181,7 +239,8 @@ def add_event(request):
         return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
 
     # TODO(zhangwen): error handling, e.g. title too long.
-    Event.objects.create(user=request.user, name=title, start_time=start_dt, end_time=end_dt)
+    event = Event.objects.create(
+            user=request.user, name=title, start_time=start_dt, end_time=end_dt)
 
-    json = simplejson.dumps({'success': 'true'})
+    json = simplejson.dumps({'success': 'true', 'id': event.id})
     return HttpResponse(json, content_type='application/json')
