@@ -90,15 +90,25 @@
 				$('#delete-event-btn').off();
 
 				$('#editEventBtn').click(function() {
-	    			calEvent.title = $('#editEventTitle').val();
-	    			calEvent.start = $('#startTimePicker').timepicker('getTime', start);
-	    			calEvent.end = $('#endTimePicker').timepicker('getTime', end);
-	  				$('#calendar').fullCalendar('updateEvent', calEvent);
-	  				$('#dialog').dialog("close");	            	
+          var title = $('#editEventTitle').val();
+          var start_time = $('#startTimePicker').timepicker('getTime', start);
+          var end_time = $('#endTimePicker').timepicker('getTime', end);
+
+          $.post(
+            '/cal/edit_event?event_id=' + calEvent.id,
+            { title: title, start: moment(start_time).format('MM/DD/YYYY h:mm:ss A'),
+              end: moment(end_time).format('MM/DD/YYYY h:mm:ss A') }
+          ).done(function(data) {
+            $('#calendar').fullCalendar('refetchEvents');
+            $('#dialog').dialog("close");
+          }).fail(function(jqXHR, textStatus, errorThrown) {
+            window.alert('Edit event failed: ' + errorThrown);
+          });
 	            });
+
 	            $('#delete-event-btn').click(function() {
                 $.post('/cal/delete_event', { event_id: calEvent.id }, function() {
-                  $('#calendar').fullCalendar('removeEvents', calEvent.id);
+                  $('#calendar').fullCalendar('refetchEvents');
                 });
 					$('#dialog').dialog("close");
 				})
@@ -111,18 +121,27 @@
 			select: function(start, end, jsEvent) {
 				var title = prompt("Event Title");
 				if (title) {
-
           $.post('/cal/add_event', {
             title: title, start: start.format(), end: end.format()
           }, function(data) {
-            var eventData = { title: title, start: start, end: end, id: data.id };
-            $('#calendar').fullCalendar('renderEvent', eventData, true);
+            $('#calendar').fullCalendar('refetchEvents');
           }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
             window.alert('Add event failed: ' + errorThrown);
           });
 				}
 				$('#calendar').fullCalendar('unselect');
 			},
+      eventResize: function(calEvent, delta, revertFunc) {
+        $.post(
+          '/cal/edit_event?event_id=' + calEvent.id,
+          { title: calEvent.title, start: calEvent.start.format(), end: calEvent.end.format() }
+        ).done(function(data) {
+          $('#calendar').fullCalendar('refetchEvents');
+          $('#dialog').dialog("close");
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+          window.alert('Edit event failed: ' + errorThrown);
+        });
+      },
 			editable: true,
 			eventLimit: true,
 		});

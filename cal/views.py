@@ -228,8 +228,7 @@ def delete_event(request):
     except ValueError:
         return HttpJsonResponseBadRequest("\"event_id\" not a number.")
 
-    # TODO(zhangwen): error handling (event non-existent).
-    event = Event.objects.get(user=request.user, id=event_id)
+    event = get_object_or_404(Event, user=request.user, id=event_id)
     section = event.section
     if section is None: # Just delete this event.
         event.delete()
@@ -268,4 +267,57 @@ def add_event(request):
             user=request.user, name=title, start_time=start_dt, end_time=end_dt)
 
     json = simplejson.dumps({'success': 'true', 'id': event.id})
+    return HttpResponse(json, content_type='application/json')
+
+@require_POST
+@ajax_login_required
+@transaction.atomic
+def edit_event(request):
+    """ Updates all events in the series that Event `event_id` belongs to. """
+    event_id = request.GET.get('event_id')
+    if event_id is None:
+        return HttpJsonResponseBadRequest("\"event_id\" param missing.")
+    try:
+        event_id = int(event_id)
+    except ValueError:
+        return HttpJsonResponseBadRequest("\"event_id\" not a number.")
+    event = get_object_or_404(Event, user=request.user, id=event_id)
+
+    title = request.POST.get('title')
+    if not title:
+        return HttpJsonResponseBadRequest("\"title\" param missing.")
+
+    # TODO(zhangwen): de-duplicate this?
+    start = request.POST.get('start')
+    if start is None:
+        return HttpJsonResponseBadRequest("\"start\" param missing.")
+    try:
+        new_start_dt = dateutil.parser.parse(start) # datetime
+    except (ValueError, OverflowError) as e:
+        return HttpJsonResponseBadRequest("\"start\" param invalid: %s." % e)
+
+    end = request.POST.get('end')
+    if end is None:
+        return HttpJsonResponseBadRequest("\"end\" param missing.")
+    try:
+        new_end_dt = dateutil.parser.parse(end) # datetime
+    except (ValueError, OverflowError) as e:
+        return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
+
+    section = event.section
+    if section is None: # Just update this event.
+        event.name = title
+        event.start_time = new_start_dt
+        event.end_time = new_end_dt
+        event.save()
+    else: # Update all events associated with this section.
+        new_dt = new_end_dt - new_start_dt
+        for event in Event.objects.filter(user=request.user, section=section):
+            event.name = title
+            event.start_time = datetime.datetime.combine(
+                    event.start_time.date(), new_start_dt.time())
+            event.end_time = event.start_time + new_dt
+            event.save()
+
+    json = simplejson.dumps({'success': 'true'})
     return HttpResponse(json, content_type='application/json')

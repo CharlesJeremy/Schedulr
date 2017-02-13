@@ -9,4 +9,5 @@ urlpatterns = [
         url(r'^get_sections$', views.get_sections_for_course, name='get_sections'),
         url(r'^add_sections$', views.add_sections, name='add_sections'),
         url(r'^delete_event$', views.delete_event, name='delete_event'),
+        url(r'^edit_event$', views.edit_event, name='edit_event'),
 ]
