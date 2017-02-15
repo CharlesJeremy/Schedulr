@@ -4,6 +4,10 @@
 	text-align:center;
 }
 
+.register-form {    
+  padding: 20px;
+}
+
 .form-signin {
   max-width: 420px;
   padding: 30px 38px 66px;
@@ -32,7 +36,6 @@ input[type="text"] {
 }
 
 input[type="password"] {
-  margin-bottom: 20px;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }

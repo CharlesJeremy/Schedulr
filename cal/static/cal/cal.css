@@ -20,7 +20,7 @@ html, body {
 }
 
 .form-add-class {
-  max-width: 380px;
+  max-width: 280px;
   margin: 10px;
   background-color: #eee;
   border: 3px dotted rgba(0,0,0,0.1);  

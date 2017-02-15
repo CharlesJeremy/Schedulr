@@ -16,13 +16,14 @@
 
 <body>
 
+<div class="register-form">
 <form class="form-horizontal" action='' method="POST">
   {% csrf_token %}
   <fieldset>
     <div id="legend">
       <legend class="">Register</legend>
     </div>
-    <div class="control-group">
+    <div cla ss="control-group">
       <!-- Username -->
       <label class="control-label"  for="username">Username</label>
       <div class="controls">
@@ -72,5 +73,6 @@
     </div>
   </fieldset>
 </form>
+</div>
 </body>
 </html>
