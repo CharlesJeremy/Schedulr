@@ -71,128 +71,128 @@
         }
       });
 
-		$('#calendar').fullCalendar({
-      height: 'parent',
-      nowIndicator: true,
-			header: {
-			  left: 'prev, next, today',
-			  center: 'title', 
-			  right: 'agendaWeek,agendaDay,month'
-			},
-			eventClick: function(calEvent, jsEvent, view) {
-				$('#dialog').dialog("destroy");
-				$('#dialog').dialog();
-				$('#editEventTitle').val(calEvent.title); //Defaults to the event's title
-				var start = calEvent.start.local().toDate();
-				var end = calEvent.end.local().toDate();
-				$('#startTimePicker').timepicker('setTime', start); //Defaults to the event's current start time
-				$('#endTimePicker').timepicker('setTime', end);
-				$('#editEventBtn').off(); //Remove all previous handlers from the buttons
-				$('#delete-event-btn').off();
+      $('#calendar').fullCalendar({
+        height: 'parent',
+        nowIndicator: true,
+        header: {
+          left: 'prev, next, today',
+          center: 'title',
+          right: 'agendaWeek,agendaDay,month'
+        },
+        eventClick: function(calEvent, jsEvent, view) {
+          $('#dialog').dialog("destroy");
+          $('#dialog').dialog();
+          $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
+          var start = calEvent.start.local().toDate();
+          var end = calEvent.end.local().toDate();
+          $('#startTimePicker').timepicker('setTime', start); //Defaults to the event's current start time
+          $('#endTimePicker').timepicker('setTime', end);
+          $('#editEventBtn').off(); //Remove all previous handlers from the buttons
+          $('#delete-event-btn').off();
 
-				$('#editEventBtn').click(function() {
-          var title = $('#editEventTitle').val();
-          var start_time = $('#startTimePicker').timepicker('getTime', start);
-          var end_time = $('#endTimePicker').timepicker('getTime', end);
+          $('#editEventBtn').click(function() {
+            var title = $('#editEventTitle').val();
+            var start_time = $('#startTimePicker').timepicker('getTime', start);
+            var end_time = $('#endTimePicker').timepicker('getTime', end);
 
+            $.post(
+                '/cal/edit_event_abs/' + calEvent.id,
+                { name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
+                  end_time: moment(end_time).format(DATETIME_FORMAT) }
+                ).done(function(data) {
+              $('#calendar').fullCalendar('refetchEvents');
+              $('#dialog').dialog("close");
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                  window.alert('Edit event failed: ' + errorThrown);
+                });
+          });
+
+          $('#delete-event-btn').click(function() {
+            $.post('/cal/delete_event', { event_id: calEvent.id }, function() {
+              $('#calendar').fullCalendar('refetchEvents');
+            });
+            $('#dialog').dialog("close");
+            $('#createEventDialog').dialog("close");
+          })
+        },
+        events: '/cal/get_event_feed', //Fetches events as a json feed from this url
+        defaultView: 'agendaWeek',
+        navLinks: true,
+        selectable: true,
+        selectHelper: true,
+        select: function(start, end, jsEvent) {
+          $('#createEventDialog').dialog("destroy");
+          $('#createEventDialog').dialog();
+          $('#createEventTitle').val('');
+          start_date_obj = start.local().toDate();
+          end_date_obj = end.local().toDate();
+          $('#createEventStartTimePicker').timepicker('setTime', start_date_obj); //Defaults to the event's current start time
+          $('#createEventEndTimePicker').timepicker('setTime', end_date_obj);
+          $('#createEventBtn').off(); //Remove all previous handlers from the buttons
+
+          $('#createEventBtn').click(function() {
+            var title = $('#createEventTitle').val();
+            var start_time = $('#createEventStartTimePicker').timepicker('getTime', start);
+            var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
+            if (title) {
+              $.post('/cal/add_event', {
+                title: title, start: moment(start_time).format('MM/DD/YYYY h:mm:ss A'),
+                end: moment(end_time).format('MM/DD/YYYY h:mm:ss A')
+              }, function(data) {
+                $('#calendar').fullCalendar('refetchEvents');
+              }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
+                window.alert('Add event failed: ' + errorThrown);
+              });
+              $('#createEventDialog').dialog("close");
+              $('#calendar').fullCalendar('unselect');
+            }
+          });
+        },
+        eventResize: function(calEvent, delta, revertFunc) {
           $.post(
-            '/cal/edit_event_abs/' + calEvent.id,
-            { name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
-              end_time: moment(end_time).format(DATETIME_FORMAT) }
-          ).done(function(data) {
+              '/cal/edit_event_rel/' + calEvent.id,
+              { name: calEvent.title, duration_delta: delta.asSeconds() }
+              ).done(function(data) {
+            $('#calendar').fullCalendar('refetchEvents');
+            $('#dialog').dialog("close");
+            $('#createEventDialog').dialog("close");
+          }).fail(function(jqXHR, textStatus, errorThrown) {
+            revertFunc();
+            window.alert('Edit event failed: ' + errorThrown);
+          });
+        },
+        eventDrop: function(calEvent, delta, revertFunc) {
+          $.post(
+              '/cal/edit_event_rel/' + calEvent.id,
+              { name: calEvent.title, time_delta: delta.asSeconds() }
+              ).done(function(data) {
             $('#calendar').fullCalendar('refetchEvents');
             $('#dialog').dialog("close");
           }).fail(function(jqXHR, textStatus, errorThrown) {
+            revertFunc();
             window.alert('Edit event failed: ' + errorThrown);
           });
-	            });
+        },
+        editable: true,
+        eventLimit: true,
+        allDaySlot: false,
+      });
 
-	            $('#delete-event-btn').click(function() {
-	                $.post('/cal/delete_event', { event_id: calEvent.id }, function() {
-	                  $('#calendar').fullCalendar('refetchEvents');
-	                });
-						$('#dialog').dialog("close");
-						$('#createEventDialog').dialog("close");
-				})
-			},
-			events: '/cal/get_event_feed', //Fetches events as a json feed from this url
-			defaultView: 'agendaWeek',
-			navLinks: true,
-			selectable: true,
-			selectHelper: true,
-			select: function(start, end, jsEvent) {
-				$('#createEventDialog').dialog("destroy");
-				$('#createEventDialog').dialog();
-				$('#createEventTitle').val('');
-				start_date_obj = start.local().toDate();
-				end_date_obj = end.local().toDate();
-				$('#createEventStartTimePicker').timepicker('setTime', start_date_obj); //Defaults to the event's current start time
-				$('#createEventEndTimePicker').timepicker('setTime', end_date_obj);
-				$('#createEventBtn').off(); //Remove all previous handlers from the buttons
-
-				$('#createEventBtn').click(function() {
-			        var title = $('#createEventTitle').val();
-			        var start_time = $('#createEventStartTimePicker').timepicker('getTime', start);
-			        var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
-					if (title) {
-			          $.post('/cal/add_event', {
-			          	title: title, start: moment(start_time).format('MM/DD/YYYY h:mm:ss A'),
-              			end: moment(end_time).format('MM/DD/YYYY h:mm:ss A') 
-			          }, function(data) {
-			            $('#calendar').fullCalendar('refetchEvents');
-			          }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-			            window.alert('Add event failed: ' + errorThrown);
-			          });
-					  $('#createEventDialog').dialog("close");
-					  $('#calendar').fullCalendar('unselect');
-					}
-				});
-			},
-      eventResize: function(calEvent, delta, revertFunc) {
-        $.post(
-          '/cal/edit_event_rel/' + calEvent.id,
-          { name: calEvent.title, duration_delta: delta.asSeconds() }
-        ).done(function(data) {
-          $('#calendar').fullCalendar('refetchEvents');
-          $('#dialog').dialog("close");
-          $('#createEventDialog').dialog("close");
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-          revertFunc();
-          window.alert('Edit event failed: ' + errorThrown);
-        });
-      },
-      eventDrop: function(calEvent, delta, revertFunc) {
-        $.post(
-          '/cal/edit_event_rel/' + calEvent.id,
-          { name: calEvent.title, time_delta: delta.asSeconds() }
-        ).done(function(data) {
-          $('#calendar').fullCalendar('refetchEvents');
-          $('#dialog').dialog("close");
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-          revertFunc();
-          window.alert('Edit event failed: ' + errorThrown);
-        });
-      },
-			editable: true,
-			eventLimit: true,
-      allDaySlot: false,
-		});
-
-    $('#dialog').dialog({ autoOpen: false });
-    $('#createEventDialog').dialog({ autoOpen: false });
-    $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
-	$('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
-	$('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
-	$('#endTimePicker').timepicker({ 'scrollDefault': 'now' });
-    $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
+      $('#dialog').dialog({ autoOpen: false });
+      $('#createEventDialog').dialog({ autoOpen: false });
+      $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#endTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
     });
     </script>
   </head>
   <body>
-  	<form id="logout" class="upper-right" action="/accounts/logout/" method="post">
-  		{% csrf_token %}
-  		<button class="button" name="Logout" value="Logout" type="Submit">Logout</button> 
-  	</form>
+    <form id="logout" class="upper-right" action="/accounts/logout/" method="post">
+      {% csrf_token %}
+      <button class="button" name="Logout" value="Logout" type="Submit">Logout</button>
+    </form>
 
     <div class="box">
       <div class="row header">
@@ -203,17 +203,17 @@
         </form>
       </div>
       <div id="dialog" style="display: none" title="Edit event">
-      	<p>Title: <input type="text" id="editEventTitle"></p>
-      	<p>Start time: <input type="text" id="startTimePicker"></p>
-      	<p>End time: <input type="text" id="endTimePicker"></p>
-      	<button class="small-button" name="EditEvent" id="editEventBtn" value="Submit" type="Submit"> Submit </button>
-      	<button class="small-delete-button" name="DeleteEvent" id="delete-event-btn" value="Submit" type="Submit"> Delete Event </button>
+        <p>Title: <input type="text" id="editEventTitle"></p>
+        <p>Start time: <input type="text" id="startTimePicker"></p>
+        <p>End time: <input type="text" id="endTimePicker"></p>
+        <button class="small-button" name="EditEvent" id="editEventBtn" value="Submit" type="Submit"> Submit </button>
+        <button class="small-delete-button" name="DeleteEvent" id="delete-event-btn" value="Submit" type="Submit"> Delete Event </button>
       </div>
       <div id="createEventDialog" style="display: none" title="Create event">
-      	<p>Title: <input type="text" id="createEventTitle"></p>
-      	<p>Start time: <input type="text" id="createEventStartTimePicker"></p>
-      	<p>End time: <input type="text" id="createEventEndTimePicker"></p>
-      	<button class="small-button" name="CreateEvent" id="createEventBtn" value="Submit" type="Submit"> Submit </button>
+        <p>Title: <input type="text" id="createEventTitle"></p>
+        <p>Start time: <input type="text" id="createEventStartTimePicker"></p>
+        <p>End time: <input type="text" id="createEventEndTimePicker"></p>
+        <button class="small-button" name="CreateEvent" id="createEventBtn" value="Submit" type="Submit"> Submit </button>
       </div>
       <div id="add_course_dialog" style="display: none" title="Choose sections">
         <div style="overflow: auto; max-height: 400px">
