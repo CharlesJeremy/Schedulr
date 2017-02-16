@@ -126,8 +126,6 @@
         eventClick: function(calEvent, jsEvent, view) {
           var editEventForm = $('#editEventForm');
           reset_error_ui(editEventForm);
-          $('#dialog').dialog("destroy");
-          $('#dialog').dialog({ position: {my: "left", at: "right", of: jsEvent}});
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
           var start = calEvent.start.local().toDate();
           var end = calEvent.end.local().toDate();
@@ -162,7 +160,9 @@
             });
             $('#dialog').dialog("close");
             $('#createEventDialog').dialog("close");
-          })
+          });
+
+          $('#dialog').dialog('open');
         },
         events: '/cal/get_event_feed', //Fetches events as a json feed from this url
         defaultView: 'agendaWeek',
@@ -173,8 +173,8 @@
           var createEventForm = $('#createEventForm');
           reset_error_ui(createEventForm);
 
-          $('#createEventDialog').dialog("destroy");
-          $('#createEventDialog').dialog({ position: {my: "left", at: "right", of: jsEvent}});
+          // $('#createEventDialog').dialog("destroy");
+          // $('#createEventDialog').dialog({ position: {my: "left", at: "right", of: jsEvent}});
           $('#createEventTitle').val('');
           var start_date_obj = start.local().toDate();
           var end_date_obj = end.local().toDate();
@@ -203,6 +203,8 @@
 
             return false;
           });
+
+          $('#createEventDialog').dialog('open');
         },
         eventResize: function(calEvent, delta, revertFunc) {
           $.post('/cal/edit_event_rel/' + calEvent.id,
@@ -230,10 +232,13 @@
         editable: true,
         eventLimit: true,
         allDaySlot: false,
-        unselectCancel: "[.unselect-cancel]"});
+        unselectAuto: false,
+      });
 
       $('#dialog').dialog({ autoOpen: false });
-      $('#createEventDialog').dialog({ autoOpen: false });
+      $('#createEventDialog').dialog({ autoOpen: false, close: function() {
+        $('#calendar').fullCalendar('unselect');
+      }});
       $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
@@ -276,7 +281,7 @@
         </form>
       </div>
 
-      <div id="createEventDialog" class="unselect-cancel" style="display: none" title="Create event">
+      <div id="createEventDialog" style="display: none" title="Create event">
         <form id="createEventForm">
           <p>
             Title: <input type="text" id="createEventTitle" class="textbox-name">
