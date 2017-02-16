@@ -107,10 +107,11 @@
 	            });
 
 	            $('#delete-event-btn').click(function() {
-                $.post('/cal/delete_event', { event_id: calEvent.id }, function() {
-                  $('#calendar').fullCalendar('refetchEvents');
-                });
-					$('#dialog').dialog("close");
+	                $.post('/cal/delete_event', { event_id: calEvent.id }, function() {
+	                  $('#calendar').fullCalendar('refetchEvents');
+	                });
+						$('#dialog').dialog("close");
+						$('#createEventDialog').dialog("close");
 				})
 			},
 			events: '/cal/get_event_feed', //Fetches events as a json feed from this url
@@ -119,17 +120,32 @@
 			selectable: true,
 			selectHelper: true,
 			select: function(start, end, jsEvent) {
-				var title = prompt("Event Title");
-				if (title) {
-          $.post('/cal/add_event', {
-            title: title, start: start.format(), end: end.format()
-          }, function(data) {
-            $('#calendar').fullCalendar('refetchEvents');
-          }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-            window.alert('Add event failed: ' + errorThrown);
-          });
-				}
-				$('#calendar').fullCalendar('unselect');
+				$('#createEventDialog').dialog("destroy");
+				$('#createEventDialog').dialog();
+				$('#createEventTitle').val('');
+				start_date_obj = start.local().toDate();
+				end_date_obj = end.local().toDate();
+				$('#createEventStartTimePicker').timepicker('setTime', start_date_obj); //Defaults to the event's current start time
+				$('#createEventEndTimePicker').timepicker('setTime', end_date_obj);
+				$('#createEventBtn').off(); //Remove all previous handlers from the buttons
+
+				$('#createEventBtn').click(function() {
+			        var title = $('#createEventTitle').val();
+			        var start_time = $('#createEventStartTimePicker').timepicker('getTime', start);
+			        var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
+					if (title) {
+			          $.post('/cal/add_event', {
+			          	title: title, start: moment(start_time).format('MM/DD/YYYY h:mm:ss A'),
+              			end: moment(end_time).format('MM/DD/YYYY h:mm:ss A') 
+			          }, function(data) {
+			            $('#calendar').fullCalendar('refetchEvents');
+			          }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
+			            window.alert('Add event failed: ' + errorThrown);
+			          });
+					  $('#createEventDialog').dialog("close");
+					  $('#calendar').fullCalendar('unselect');
+					}
+				});
 			},
       eventResize: function(calEvent, delta, revertFunc) {
         $.post(
@@ -138,6 +154,7 @@
         ).done(function(data) {
           $('#calendar').fullCalendar('refetchEvents');
           $('#dialog').dialog("close");
+          $('#createEventDialog').dialog("close");
         }).fail(function(jqXHR, textStatus, errorThrown) {
           window.alert('Edit event failed: ' + errorThrown);
         });
@@ -147,6 +164,9 @@
 		});
 
     $('#dialog').dialog({ autoOpen: false });
+    $('#createEventDialog').dialog({ autoOpen: false });
+    $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
+	$('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
 	$('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
 	$('#endTimePicker').timepicker({ 'scrollDefault': 'now' });
     $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
@@ -174,7 +194,12 @@
       	<button class="small-button" name="EditEvent" id="editEventBtn" value="Submit" type="Submit"> Submit </button>
       	<button class="small-delete-button" name="DeleteEvent" id="delete-event-btn" value="Submit" type="Submit"> Delete Event </button>
       </div>
-
+      <div id="createEventDialog" style="display: none" title="Create event">
+      	<p>Title: <input type="text" id="createEventTitle"></p>
+      	<p>Start time: <input type="text" id="createEventStartTimePicker"></p>
+      	<p>End time: <input type="text" id="createEventEndTimePicker"></p>
+      	<button class="small-button" name="CreateEvent" id="createEventBtn" value="Submit" type="Submit"> Submit </button>
+      </div>
       <div id="add_course_dialog" style="display: none" title="Choose sections">
         <div style="overflow: auto; max-height: 400px">
           <h2 id="course_title"></h2>
