@@ -82,7 +82,7 @@
         },
         eventClick: function(calEvent, jsEvent, view) {
           $('#dialog').dialog("destroy");
-          $('#dialog').dialog();
+          $('#dialog').dialog({ position: {my: "left", at: "right", of: jsEvent} , modal: true });
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
           var start = calEvent.start.local().toDate();
           var end = calEvent.end.local().toDate();
@@ -125,7 +125,7 @@
         selectHelper: true,
         select: function(start, end, jsEvent) {
           $('#createEventDialog').dialog("destroy");
-          $('#createEventDialog').dialog();
+          $('#createEventDialog').dialog({ position: {at: "right", of: jsEvent} , modal: true });
           $('#createEventTitle').val('');
           var start_date_obj = start.local().toDate();
           var end_date_obj = end.local().toDate();
