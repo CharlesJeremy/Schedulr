@@ -197,7 +197,7 @@
         editable: true,
         eventLimit: true,
         allDaySlot: false,
-      });
+        unselectCancel: "[.unselect-cancel]"});
 
       $('#dialog').dialog({ autoOpen: false });
       $('#createEventDialog').dialog({ autoOpen: false });
@@ -234,7 +234,7 @@
         </form>
       </div>
 
-      <div id="createEventDialog" style="display: none" title="Create event">
+      <div id="createEventDialog" class="unselect-cancel" style="display: none" title="Create event">
         <form id="createEventForm">
           <p>Title: <input type="text" id="createEventTitle"></p>
           <p>Start time: <input type="text" id="createEventStartTimePicker"></p>
