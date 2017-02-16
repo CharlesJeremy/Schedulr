@@ -28,6 +28,9 @@ html, body {
 
 #enter-class {
 	padding: 10px;
+}
+
+.enter-class-text {
   font-weight: bold;
   font-size: 1.5em;
 }
