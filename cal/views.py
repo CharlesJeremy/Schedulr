@@ -219,17 +219,9 @@ def get_event_feed(request):
 @require_POST
 @ajax_login_required
 @transaction.atomic
-def delete_event(request):
+def delete_event(request, event_id):
     """ Removes all events in the series that Event `event_id` belongs to. """
-    event_id = request.POST.get('event_id')
-    if event_id is None:
-        return HttpJsonResponseBadRequest("\"event_id\" param missing.")
-    try:
-        event_id = int(event_id)
-    except ValueError:
-        return HttpJsonResponseBadRequest("\"event_id\" not a number.")
-
-    event = get_object_or_404(Event, user=request.user, id=event_id)
+    event = get_object_or_404(Event, user=request.user, id=int(event_id))
     section = event.section
     if section is None: # Just delete this event.
         event.delete()
