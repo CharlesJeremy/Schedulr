@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from .forms import EventForm, EditEventFormDelta
 from .models import Event
 from courses.models import Course, Section
 from courses.utils import Quarter
@@ -241,30 +242,13 @@ def delete_event(request):
 @require_POST
 @ajax_login_required
 def add_event(request):
-    title = request.POST.get('title')
-    if not title:
-        return HttpJsonResponseBadRequest("\"title\" param missing.")
+    form = EventForm(request.POST)
+    if not form.is_valid():
+        return HttpJsonResponseBadRequest(form.errors)
 
-    # TODO(zhangwen): de-duplicate this?
-    start = request.POST.get('start')
-    if start is None:
-        return HttpJsonResponseBadRequest("\"start\" param missing.")
-    try:
-        start_dt = dateutil.parser.parse(start) # datetime
-    except (ValueError, OverflowError) as e:
-        return HttpJsonResponseBadRequest("\"start\" param invalid: %s." % e)
-
-    end = request.POST.get('end')
-    if end is None:
-        return HttpJsonResponseBadRequest("\"end\" param missing.")
-    try:
-        end_dt = dateutil.parser.parse(end) # datetime
-    except (ValueError, OverflowError) as e:
-        return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
-
-    # TODO(zhangwen): error handling, e.g. title too long.
-    event = Event.objects.create(
-            user=request.user, name=title, start_time=start_dt, end_time=end_dt)
+    event = form.save(commit=False)
+    event.user = request.user
+    event.save()
 
     json = simplejson.dumps({'success': 'true', 'id': event.id})
     return HttpResponse(json, content_type='application/json')
@@ -272,52 +256,60 @@ def add_event(request):
 @require_POST
 @ajax_login_required
 @transaction.atomic
-def edit_event(request):
-    """ Updates all events in the series that Event `event_id` belongs to. """
-    event_id = request.GET.get('event_id')
-    if event_id is None:
-        return HttpJsonResponseBadRequest("\"event_id\" param missing.")
-    try:
-        event_id = int(event_id)
-    except ValueError:
-        return HttpJsonResponseBadRequest("\"event_id\" not a number.")
-    event = get_object_or_404(Event, user=request.user, id=event_id)
-
-    title = request.POST.get('title')
-    if not title:
-        return HttpJsonResponseBadRequest("\"title\" param missing.")
-
-    # TODO(zhangwen): de-duplicate this?
-    start = request.POST.get('start')
-    if start is None:
-        return HttpJsonResponseBadRequest("\"start\" param missing.")
-    try:
-        new_start_dt = dateutil.parser.parse(start) # datetime
-    except (ValueError, OverflowError) as e:
-        return HttpJsonResponseBadRequest("\"start\" param invalid: %s." % e)
-
-    end = request.POST.get('end')
-    if end is None:
-        return HttpJsonResponseBadRequest("\"end\" param missing.")
-    try:
-        new_end_dt = dateutil.parser.parse(end) # datetime
-    except (ValueError, OverflowError) as e:
-        return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
+def edit_event_abs(request, event_id):
+    """ Updates all events in the series that Event `event_id` belongs to using absolute times. """
+    event = get_object_or_404(Event, user=request.user, id=int(event_id))
+    form = EventForm(request.POST, instance=event)
+    if not form.is_valid():
+        return HttpJsonResponseBadRequest(form.errors)
 
     section = event.section
     if section is None: # Just update this event.
-        event.name = title
-        event.start_time = new_start_dt
-        event.end_time = new_end_dt
-        event.save()
+        form.save()
     else: # Update all events associated with this section.
-        new_dt = new_end_dt - new_start_dt
+        new_start_time = form.cleaned_data['start_time']
+        new_end_time = form.cleaned_data['end_time']
+        new_dt = new_end_time - new_start_time
+        new_name = form.cleaned_data['name']
         for event in Event.objects.filter(user=request.user, section=section):
-            event.name = title
+            event.name = new_name
             event.start_time = datetime.datetime.combine(
-                    event.start_time.date(), new_start_dt.time())
+                    event.start_time.date(), new_start_time.time())
             event.end_time = event.start_time + new_dt
             event.save()
 
     json = simplejson.dumps({'success': 'true'})
     return HttpResponse(json, content_type='application/json')
+
+@require_POST
+@ajax_login_required
+@transaction.atomic
+def edit_event_rel(request, event_id):
+    """
+    Updates all events in the series that Event `event_id` belongs to using relative times.
+    """
+    event = get_object_or_404(Event, user=request.user, id=event_id)
+
+    form = EditEventFormDelta(request.POST)
+    if not form.is_valid():
+        return HttpJsonResponseBadRequest(form.errors)
+    title = form.cleaned_data['name']
+    duration_delta = form.cleaned_data['duration_delta'] or timedelta()
+    time_delta = form.cleaned_data['time_delta'] or timedelta()
+
+    section = event.section
+    if section is None:
+        events = [event]
+    else:
+        events = Event.objects.filter(user=request.user, section=section)
+
+    for event in events:
+        event.name = title
+        old_duration = event.end_time - event.start_time
+        event.start_time += time_delta
+        event.end_time = event.start_time + old_duration + duration_delta
+        event.save()
+
+    json = simplejson.dumps({'success': 'true'})
+    return HttpResponse(json, content_type='application/json')
+
