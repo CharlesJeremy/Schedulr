@@ -7,7 +7,7 @@
     <link rel='stylesheet' href='{% static "styles.css" %}' />
     <link rel='stylesheet' href='{% static "cal/cal.css" %}' />
     <link rel='stylesheet' href='{% static "cal/jquery.timepicker.css" %}' />
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
 
     <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js'></script>
@@ -16,13 +16,18 @@
 
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.3/js.cookie.min.js'></script>
+
+    <script src='//cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js'></script>
+
     <script type="text/javascript">
     var DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:SS';
 
     function add_course() {
-      var course_str = $('#course_str').val();
+      var course_str_box = $('#course_str');
+      var course_str = course_str_box.val();
       if (!course_str) {
-        alert('Please enter search string!');
+        course_str_box.notify('Please enter search string!', { 'position': 'bottom' });
+        return;
       }
 
       $.get('/cal/get_sections', { course_str: course_str }, function(data) {
@@ -30,7 +35,7 @@
         add_course_dialog.dialog('close');
 
         if (data.error) {
-          alert('No course found!');
+          $.notify('Course "' + course_str + '" not found.');
         } else {
           $('#course_title').text(data.course_title);
           var sections_div = $('#sections_div');
@@ -47,7 +52,7 @@
             var description = 'Section #' + item.section_number +
               ' (' + item.component + '): ' + item.schedule;
             if (item.instructors) {
-              description += ' with ' + item.instructors;
+              description += ' | ' + item.instructors;
             }
             $('<label />', { 'for': ckbox_id, text: description }).appendTo(p);
           });
@@ -56,7 +61,21 @@
       }, 'json');
     }
 
+    $(document).ajaxError(function(event, request, settings) {
+      if (request.readyState == 0) {
+        $.notify("Connection failed. Please check your internet connection.");
+      } else if (request.status == 500) {
+        $.notify("Something has gone wrong on the server side (500). Please retry.");
+      }
+    });
+
     $(document).ready(function() {
+      $.notify.defaults({
+        className: 'info',
+        globalPosition: 'top center',
+        style: 'bootstrap',
+      });
+
       /* Set up CSRF token for AJAX requests. */
       /* Taken from https://docs.djangoproject.com/en/1.10/ref/csrf/#ajax. */
       var csrftoken = Cookies.get('csrftoken');
@@ -161,7 +180,7 @@
             $('#createEventDialog').dialog("close");
           }).fail(function(jqXHR, textStatus, errorThrown) {
             revertFunc();
-            window.alert('Edit event failed: ' + errorThrown);
+            $.notify("Edit event failed. Please try again.");
           });
         },
         eventDrop: function(calEvent, delta, revertFunc) {
@@ -172,7 +191,7 @@
             $('#dialog').dialog("close");
           }).fail(function(jqXHR, textStatus, errorThrown) {
             revertFunc();
-            window.alert('Edit event failed: ' + errorThrown);
+            $.notify("Edit event failed. Please try again.");
           });
         },
         editable: true,
@@ -199,8 +218,8 @@
     <div class="box">
       <div class="row header">
         <form id="enter-class" class="form-add-class" name="enter-class" onsubmit="return false"> 
-        <span class="form-signin-heading"> Enter a class (e.g., CS103):
-          <input name="course_str" type="text" id="course_str" /> </span>
+          <span class="enter-class-text"> Enter a class (e.g., CS103):</span>
+          <input name="course_str" type="text" id="course_str" />
           <button name="Submit" value="Enter" onclick="add_course()" type="Submit">Add class</button> 
         </form>
       </div>
