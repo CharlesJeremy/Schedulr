@@ -98,10 +98,10 @@ class Schedule(models.Model):
     location = models.CharField(max_length=100, null=True, blank=True) # e.g. "School of Education 334".
 
     def __unicode__(self):
-        str_repr = "%s--%s, %s %s--%s" % (self.start_date, self.end_date, self.days_of_week,
+        str_repr = "%s--%s | %s %s--%s" % (self.start_date, self.end_date, self.days_of_week,
                 self.start_time, self.end_time)
         if self.location:
-            str_repr += " at %s" % self.location
+            str_repr += " | %s" % self.location
 
         return str_repr
 
