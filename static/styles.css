@@ -40,6 +40,17 @@ input[type="password"] {
   border-top-right-radius: 0;
 }
 
+.upper-right {
+  position:absolute;
+  top:5px;
+  right:5px;
+}
+
+.back {
+  margin-top: 15px;
+  margin-left: 20px;
+}
+
 .button {
     background-color: #4CAF50;
     border: none;
