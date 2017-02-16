@@ -22,6 +22,28 @@
     <script type="text/javascript">
     var DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:SS';
 
+    function reset_error_ui(form) {
+      form.find('input:text').removeClass('ui-state-error');
+      form.find('.form-error-text').hide();
+    }
+
+    function display_form_errors(errorResponse, form, genericMessage) {
+      var json = $.parseJSON(errorResponse);
+      if (json.error) {
+        $.each(json.error, function(index, value) {
+          var textbox = form.find('.textbox-' + index);
+          if (textbox) textbox.addClass('ui-state-error');
+          var err_container = form.find('.label-' + index);
+          if (err_container) {
+            err_container.text(value[0]);
+            err_container.show();
+          }
+        });
+      } else {
+        $.notify(genericMessage);
+      }
+    }
+
     function add_course() {
       var course_str_box = $('#course_str');
       var course_str = course_str_box.val();
@@ -66,6 +88,8 @@
         $.notify("Connection failed. Please check your internet connection.");
       } else if (request.status == 500) {
         $.notify("Something has gone wrong on the server side (500). Please retry.");
+      } else if (request.status == 404) {
+        $.notify("Event not found (404). Please retry.");
       }
     });
 
@@ -73,7 +97,7 @@
       $.notify.defaults({
         className: 'info',
         globalPosition: 'top center',
-        style: 'bootstrap',
+        autoHide: false,
       });
 
       /* Set up CSRF token for AJAX requests. */
@@ -100,6 +124,8 @@
           right: 'agendaWeek,agendaDay,month'
         },
         eventClick: function(calEvent, jsEvent, view) {
+          var editEventForm = $('#editEventForm');
+          reset_error_ui(editEventForm);
           $('#dialog').dialog("destroy");
           $('#dialog').dialog({ position: {my: "left", at: "right", of: jsEvent}});
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
@@ -107,23 +133,24 @@
           var end = calEvent.end.local().toDate();
           $('#startTimePicker').timepicker('setTime', start); //Defaults to the event's current start time
           $('#endTimePicker').timepicker('setTime', end);
-          $('#editEventForm').off(); //Remove all previous handlers from the buttons
+          editEventForm.off(); //Remove all previous handlers from the buttons
           $('#deleteEventBtn').off();
 
-          $('#editEventForm').submit(function() {
+          editEventForm.submit(function() {
+            reset_error_ui(editEventForm);
             var title = $('#editEventTitle').val();
             var start_time = $('#startTimePicker').timepicker('getTime', start);
             var end_time = $('#endTimePicker').timepicker('getTime', end);
 
-            $.post(
-                '/cal/edit_event_abs/' + calEvent.id,
+            $.post('/cal/edit_event_abs/' + calEvent.id,
                 { name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
                   end_time: moment(end_time).format(DATETIME_FORMAT) }
                 ).done(function(data) {
               $('#calendar').fullCalendar('refetchEvents');
               $('#dialog').dialog("close");
             }).fail(function(jqXHR, textStatus, errorThrown) {
-              window.alert('Edit event failed: ' + errorThrown);
+              display_form_errors(jqXHR.responseText, editEventForm,
+                  "Edit event failed. Please retry.");
             });
 
             return false;
@@ -143,6 +170,9 @@
         selectable: true,
         selectHelper: true,
         select: function(start, end, jsEvent) {
+          var createEventForm = $('#createEventForm');
+          reset_error_ui(createEventForm);
+
           $('#createEventDialog').dialog("destroy");
           $('#createEventDialog').dialog({ position: {my: "left", at: "right", of: jsEvent}});
           $('#createEventTitle').val('');
@@ -150,24 +180,27 @@
           var end_date_obj = end.local().toDate();
           $('#createEventStartTimePicker').timepicker('setTime', start_date_obj); //Defaults to the event's current start time
           $('#createEventEndTimePicker').timepicker('setTime', end_date_obj);
-          $('#createEventForm').off(); //Remove all previous handlers from the buttons
+          createEventForm.off(); //Remove all previous handlers from the buttons
 
-          $('#createEventForm').submit(function() {
+          createEventForm.submit(function() {
+            reset_error_ui(createEventForm);
+
             var title = $('#createEventTitle').val();
             var start_time = $('#createEventStartTimePicker').timepicker('getTime', start);
             var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
-            if (title) {
-              $.post('/cal/add_event', {
-                name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
-                end_time: moment(end_time).format(DATETIME_FORMAT)
-              }, function(data) {
-                $('#createEventDialog').dialog("close");
-                $('#calendar').fullCalendar('unselect');
-                $('#calendar').fullCalendar('refetchEvents');
-              }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-                window.alert('Add event failed: ' + errorThrown);
-              });
-            }
+
+            $.post('/cal/add_event', {
+              name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
+              end_time: moment(end_time).format(DATETIME_FORMAT)
+            }, function(data) {
+              $('#createEventDialog').dialog("close");
+              $('#calendar').fullCalendar('unselect');
+              $('#calendar').fullCalendar('refetchEvents');
+            }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
+              display_form_errors(jqXHR.responseText, createEventForm,
+                  "Create event failed. Please retry.");
+            });
+
             return false;
           });
         },
@@ -226,9 +259,18 @@
 
       <div id="dialog" style="display: none" title="Edit event">
         <form id="editEventForm">
-          <p>Title: <input type="text" id="editEventTitle"></p>
-          <p>Start time: <input type="text" id="startTimePicker"></p>
-          <p>End time: <input type="text" id="endTimePicker"></p>
+          <p>
+            Title: <input type="text" id="editEventTitle" class="textbox-name">
+            <span class="form-error-text label-name" style="display:none"></span>
+          </p>
+          <p>
+            Start time: <input type="text" id="startTimePicker" class="textbox-start_time">
+            <span class="form-error-text label-start_time" style="display:none"></span>
+          </p>
+          <p>
+            End time: <input type="text" id="endTimePicker" class="textbox-end_time">
+            <span class="form-error-text label-end_time" style="display:none"></span>
+          </p>
           <button class="small-button" name="EditEvent" id="editEventBtn" value="Submit" type="Submit"> Submit </button>
           <button class="small-delete-button" name="DeleteEvent" id="deleteEventBtn" type="button"> Delete Event </button>
         </form>
@@ -236,9 +278,19 @@
 
       <div id="createEventDialog" class="unselect-cancel" style="display: none" title="Create event">
         <form id="createEventForm">
-          <p>Title: <input type="text" id="createEventTitle"></p>
-          <p>Start time: <input type="text" id="createEventStartTimePicker"></p>
-          <p>End time: <input type="text" id="createEventEndTimePicker"></p>
+          <p>
+            Title: <input type="text" id="createEventTitle" class="textbox-name">
+            <span class="form-error-text label-name" style="display:none"></span>
+          </p>
+          <p>
+            Start time: <input type="text" id="createEventStartTimePicker"
+              class="textbox-start_time">
+            <span class="form-error-text label-start_time" style="display:none"></span>
+          </p>
+          <p>
+            End time: <input type="text" id="createEventEndTimePicker" class="textbox-end_time">
+            <span class="form-error-text label-end_time" style="display:none"></span>
+          </p>
           <button class="small-button" name="CreateEvent" value="Submit" type="Submit"> Submit </button>
         </form>
       </div>
