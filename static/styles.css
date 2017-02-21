@@ -112,3 +112,8 @@ input[type="password"] {
 #registration-form-link {
   display: block;
 }
+
+#registration-form-link {
+  color: blue;
+  text-decoration: none;
+}

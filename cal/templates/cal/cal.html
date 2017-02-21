@@ -5,6 +5,7 @@
     <title>Schedulr</title>
     <link rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.css' />
     <link rel='stylesheet' href='{% static "styles.css" %}' />
+
     <link rel='stylesheet' href='{% static "cal/cal.css" %}' />
     <link rel='stylesheet' href='{% static "cal/jquery.timepicker.css" %}' />
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
@@ -94,10 +95,16 @@
     });
 
     $(document).ready(function() {
+      /*
+      $("#add-course-btn").button({
+        text: false,
+        icon: "ui-icon-plusthick",
+      });
+      */
+
       $.notify.defaults({
         className: 'info',
         globalPosition: 'top center',
-        autoHide: false,
       });
 
       /* Set up CSRF token for AJAX requests. */
@@ -173,8 +180,6 @@
           var createEventForm = $('#createEventForm');
           reset_error_ui(createEventForm);
 
-          // $('#createEventDialog').dialog("destroy");
-          // $('#createEventDialog').dialog({ position: {my: "left", at: "right", of: jsEvent}});
           $('#createEventTitle').val('');
           var start_date_obj = start.local().toDate();
           var end_date_obj = end.local().toDate();
@@ -248,18 +253,27 @@
     </script>
   </head>
   <body>
-    <form id="logout" class="upper-right" action="/accounts/logout/" method="post">
-      {% csrf_token %}
-      <button class="button" name="Logout" value="Logout" type="Submit">Logout</button>
-    </form>
-
     <div class="box">
       <div class="row header">
-        <form id="enter-class" class="form-add-class" name="enter-class" onsubmit="return false"> 
-          <span class="enter-class-text"> Enter a class (e.g., CS103):</span>
-          <input name="course_str" type="text" id="course_str" />
-          <button name="Submit" value="Enter" onclick="add_course()" type="Submit">Add class</button> 
+        <div class="logo-container">
+          <img class="logo" src="{% static 'cal/logo.png' %}" />
+        </div>
+
+        <form class="form-add-class" name="enter-class" onsubmit="return false">
+          <input name="course_str" type="text" id="course_str" placeholder="Add course by number (e.g. CS103)" />
+          <input name="Submit" value="Add course" onclick="add_course()" type="Submit"
+          class="add-course-submit" />
+          <!--<button id="add-course-btn" onclick="add_course()" type="Submit" class="btn
+            btn-default">&nbsp;</button>-->
         </form>
+
+        <div class="logout-container">
+          <form id="logout_form" action="/accounts/logout/" method="post">
+            {% csrf_token %}
+            <p>Welcome, <b>{{ user }}</b>.</p>
+            <p><a href="#" onclick="document.getElementById('logout_form').submit()">Logout</a></p>
+          </form>
+        </div>
       </div>
 
       <div id="dialog" style="display: none" title="Edit event">

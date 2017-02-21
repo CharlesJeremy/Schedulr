@@ -113,7 +113,7 @@ def extract_course_schedules():
         if parsed:
             key = parsed[0]
             # print(key)
-            assert key not in schedules
+            # assert key not in schedules
             schedules[key] = parsed[1]
 
     print("Schedules parsed.")

@@ -19,6 +19,13 @@ class EventForm(forms.ModelForm):
         model = Event
         fields = ['name', 'start_time', 'end_time']
 
+    def clean(self):
+        cleaned_data = super(EventForm, self).clean()
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        if start_time and end_time and (start_time > end_time):
+            self.add_error('end_time', "End time must be later than start time.")
+
 class EditEventFormDelta(forms.ModelForm):
     duration_delta = IntervalSecondsField(required=False)
     time_delta = IntervalSecondsField(required=False)

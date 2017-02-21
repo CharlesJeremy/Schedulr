@@ -12,6 +12,30 @@ html, body {
 
 .box .row.header {
   flex: 0 1 auto;
+  background-color: #eee;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.box .row.header a {
+  color: blue;
+  text-decoration: none;
+}
+
+.box .row.header .logo-container {
+  height: 50px;
+}
+
+.box .row.header img.logo {
+  height: 100%;
 }
 
 .box .row.content {
@@ -20,19 +44,19 @@ html, body {
 }
 
 .form-add-class {
-  max-width: 280px;
-  margin: 10px;
-  background-color: #eee;
-  border: 3px dotted rgba(0,0,0,0.1);  
+  margin-left: 25px;
+  margin-right: auto;
 }
 
-#enter-class {
-	padding: 10px;
+.form-add-class #course_str {
+  padding-left: 3px;
+  padding-right: 3px;
+  width: 300px;
+  height: 24px;
 }
 
-.enter-class-text {
-  font-weight: bold;
-  font-size: 1.5em;
+.form-add-class .add-course-submit {
+  height: 30px;
 }
 
 .form-error-text {
@@ -40,4 +64,16 @@ html, body {
   color: red;
   font-size: 0.8em;
   padding-top: 10px;
+}
+
+.logout-container {
+  text-align: right;
+}
+
+.logout-container a {
+  font-weight: bold;
+}
+
+.logout-container p {
+  margin: 0;
 }

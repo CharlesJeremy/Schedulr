@@ -65,7 +65,7 @@ def get_term():
 def get_course(user_input):
     """ Given a user string such as CS194, gets the course object
     from the database; also handles variations such as CS 194 and cs194"""
-    user_input.replace(" ", "");
+    user_input = user_input.replace(" ", "");
     search = re.search("\d", user_input)
     if search is None:
         return None
