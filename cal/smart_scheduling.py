@@ -13,8 +13,6 @@ BED_TIME_LIMIT = datetime.time(hour=3)
 def _schedule_showers(start_dt, end_dt, events):
     """ Schedules shower events. """
     shower_events = []
-    if not events:
-        return shower_events
 
     # First, schedule a showers after each exercise block.
     block_start_event = None

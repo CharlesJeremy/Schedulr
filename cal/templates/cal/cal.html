@@ -26,6 +26,11 @@
           {{ key|default:"null" }}: "{{ value }}",
         {% endfor %}
       };
+
+      var message_list = [];
+      {% for message in messages %}
+      message_list.push({ msg: "{{ message|escapejs }}", tags: "{{ message.tags }}" });
+      {% endfor %}
     </script>
 
     <script type="text/javascript">
@@ -106,6 +111,10 @@
       $.notify.defaults({
         className: 'info',
         globalPosition: 'top center',
+      });
+
+      $.each(message_list, function(_, value) {
+        $.notify(value.msg, value.tags);
       });
 
       /* Set up CSRF token for AJAX requests. */
@@ -283,11 +292,30 @@
         </form>
 
         <div class="logout-container">
-          <form id="logout_form" action="/accounts/logout/" method="post">
             {% csrf_token %}
             <p>Welcome, <b>{{ user }}</b>.</p>
-            <p><a href="#" onclick="document.getElementById('logout_form').submit()">Logout</a></p>
-          </form>
+            <p>
+              <ul id="menu"><li>
+                  <div><span class="ui-icon ui-icon-plus"></span>Actions...</div>
+                <ul>
+                  <li><div>
+                      <span class="ui-icon ui-icon-calendar"></span>
+                      <a href="{% url 'cal:export' %}">Export</a>
+                  </div></li>
+                  <li><div>
+                    <form id="logout_form" action="/accounts/logout/" method="post">
+                      <span class="ui-icon ui-icon-arrowthickstop-1-w"></span>
+                      <a href="#" onclick="document.getElementById('logout_form').submit()">Logout</a>
+                    </form>
+                  </div></li>
+                </ul>
+              </li></ul>
+            </p>
+            <script type="text/javascript">
+$( "#menu" ).menu({
+  position: { my: "center top", at: "bottom" }
+});
+            </script>
         </div>
       </div>
 

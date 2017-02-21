@@ -13,4 +13,6 @@ urlpatterns = [
         url(r'^delete_event/(?P<event_id>\d+)$', views.delete_event, name='delete_event'),
         url(r'^edit_event_abs/(?P<event_id>\d+)$', views.edit_event_abs, name='edit_event_abs'),
         url(r'^edit_event_rel/(?P<event_id>\d+)$', views.edit_event_rel, name='edit_event_rel'),
+        url(r'^export_auth$', views.export_to_gcal, name='export'),
+        url(r'^export_proceed$', views.export_to_gcal_proceed, name='export_proceed'),
 ]

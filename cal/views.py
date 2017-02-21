@@ -1,23 +1,29 @@
+from collections import defaultdict
 import datetime
 from datetime import timedelta
 from functools import wraps
 import re
 import simplejson
 
-import dateutil.parser
+from apiclient import discovery
+from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.http.response import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
+import httplib2
+from oauth2client import client
 
 from .forms import DateRangeForm, EventForm, EditEventFormDelta
 from .models import Event
 from .smart_scheduling import schedule as smart_schedule
-from .utils import daterange
+from .utils import daterange, next_weekday
 from courses.models import Course, Section
 from courses.utils import Quarter
 
@@ -106,7 +112,8 @@ def add_section_events(user, section):
                     name='[%s] %s' % (section.component, course),
                     location=schedule.location,
                     start_time=datetime.datetime.combine(date, schedule.start_time),
-                    end_time=datetime.datetime.combine(date, schedule.end_time))
+                    end_time=datetime.datetime.combine(date, schedule.end_time),
+                    event_type=Event.CLASS)
 
     return events
 
@@ -117,10 +124,20 @@ def get_events_in_range(user, start_dt, end_dt):
             Q(start_time__range=(start_dt, end_dt)) | Q(end_time__range=(start_dt,
                 end_dt))).order_by('start_time', 'end_time')
 
+def get_sections_for_user(user, term_year, term_quarter):
+    """ Returns an iterable of for the user for the specified quarter.
+
+    Sections without a schedule are not included.
+    """
+    course_events = Event.objects.filter(user=user)
+    course_events = course_events.filter(section__term_year=term_year)
+    course_events = course_events.filter(section__term_quarter=term_quarter)
+    sections = set(event.section for event in course_events if event.section.schedule is not None)
+    return sections
+
 
 # --- VIEWS ---
 @login_required
-@never_cache
 def index(request):
     event_form = EventForm()
     return render(request, 'cal/cal.html',
@@ -287,4 +304,120 @@ def edit_event_rel(request, event_id):
 
     json = simplejson.dumps({'success': 'true'})
     return HttpResponse(json, content_type='application/json')
+
+CLIENT_SECRET_FILE = 'secrets/client_secret.json'
+
+@login_required
+def export_to_gcal(request):
+    """ Exports course schedule to Google Calendar. """
+    flow = client.flow_from_clientsecrets(
+            CLIENT_SECRET_FILE,
+            scope='https://www.googleapis.com/auth/calendar',
+            redirect_uri=request.build_absolute_uri(reverse('cal:export'))
+    )
+
+    code = request.GET.get('code')
+    error = request.GET.get('error')
+
+    if error:
+        # TODO(zhangwen): display this error message.
+        messages.error(request, "Export failed. Please retry.")
+        return redirect('cal:index')
+
+    if not code:
+        auth_uri = flow.step1_get_authorize_url()
+        return redirect(auth_uri)
+
+    # Fetch all course sections from this quarter and display to user.
+    term_year, term_quarter = get_term()
+    sections = get_sections_for_user(request.user, term_year, term_quarter)
+    # Group sections by courses.
+    sections_for_course = defaultdict(list)
+    for section in sections:
+        sections_for_course[section.course].append(section)
+    for v in sections_for_course.itervalues():
+        v.sort(key=lambda s: s.section_number)
+
+    term_name = "%s-%d%d" % (Quarter.to_str(term_quarter), term_year % 100, (term_year+1) % 100)
+
+    return render(request, 'cal/export.html', {
+        'sections_for_course': dict(sections_for_course),
+        'code': code,
+        'cal_name': term_name,
+    })
+
+@login_required
+@require_POST
+def export_to_gcal_proceed(request):
+    flow = client.flow_from_clientsecrets(
+            CLIENT_SECRET_FILE,
+            scope='https://www.googleapis.com/auth/calendar',
+            redirect_uri=request.build_absolute_uri(reverse('cal:export'))
+    )
+
+    WEEKDAY = dict(enumerate(('MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU')))
+
+    code = request.POST.get('code')
+    cal_name = request.POST.get('cal_name')
+    if (not code) or (not cal_name):
+        return redirect('cal:export')
+
+    credentials = flow.step2_exchange(code)
+    if credentials.access_token_expired:
+        return redirect('cal:export')
+
+    http = credentials.authorize(httplib2.Http())
+    service = discovery.build('calendar', 'v3', http=http)
+
+    # TODO(zhangwen): proper error handling.
+    # Create a calendar.
+    cal = service.calendars().insert(body={ 'summary': cal_name }).execute()
+    if cal.get('error'):
+        messages.error(request, "Export failed. Please retry.")
+        return redirect('cal:index')
+
+    cal_id = cal.get('id')
+
+    # TODO(zhangwen): not atomic.
+    try:
+        term_year, term_quarter = get_term()
+        sections = get_sections_for_user(request.user, term_year, term_quarter)
+        for section in sections:
+            course = section.course
+            schedule = section.schedule
+
+            first_day_of_week = min(schedule.days_of_week.days)
+            section_start_date = next_weekday(schedule.start_date, first_day_of_week)
+
+            byday = ','.join(WEEKDAY[d] for d in schedule.days_of_week.days)
+            until = schedule.end_date.strftime('%Y%m%d')
+
+            event_body = {
+                'summary': '[%s] %s' % (section.component, course),
+                'start': {
+                    'dateTime': datetime.datetime.combine(section_start_date,
+                        schedule.start_time).isoformat(),
+                    'timeZone': settings.TIME_ZONE
+                },
+                'end': {
+                    'dateTime': datetime.datetime.combine(section_start_date,
+                        schedule.end_time).isoformat(),
+                    'timeZone': settings.TIME_ZONE
+                },
+                'recurrence': [
+                    'RRULE:FREQ=DAILY;BYDAY=%s;UNTIL=%s' % (byday, until),
+                ],
+            }
+            ev = service.events().insert(calendarId=cal_id, body=event_body).execute()
+            if ev.get('error'):
+                raise Exception
+    except:
+        # Something went wrong; rollback.
+        cal = service.calendars().delete(calendarId=cal_id).execute()
+        messages.error(request, "Export failed. Please retry.")
+        return redirect('cal:index')
+
+    # Success!
+    messages.success(request, "Export successful!")
+    return redirect('cal:index')
 
