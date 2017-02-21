@@ -21,6 +21,14 @@
     <script src='//cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js'></script>
 
     <script type="text/javascript">
+      var event_type_choices = {
+        {% for key, value in event_type_choices %}
+          {{ key|default:"null" }}: "{{ value }}",
+        {% endfor %}
+      };
+    </script>
+
+    <script type="text/javascript">
     var DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:SS';
 
     function reset_error_ui(form) {
@@ -95,13 +103,6 @@
     });
 
     $(document).ready(function() {
-      /*
-      $("#add-course-btn").button({
-        text: false,
-        icon: "ui-icon-plusthick",
-      });
-      */
-
       $.notify.defaults({
         className: 'info',
         globalPosition: 'top center',
@@ -131,6 +132,10 @@
           right: 'agendaWeek,agendaDay,month'
         },
         eventClick: function(calEvent, jsEvent, view) {
+          if (calEvent.source.editable === false) {
+            return false;
+          }
+
           var editEventForm = $('#editEventForm');
           reset_error_ui(editEventForm);
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
@@ -140,16 +145,19 @@
           $('#endTimePicker').timepicker('setTime', end);
           editEventForm.off(); //Remove all previous handlers from the buttons
           $('#deleteEventBtn').off();
+          var event_type_select = editEventForm.find('#id_event_type');
+          event_type_select.val(calEvent.event_type);
 
           editEventForm.submit(function() {
             reset_error_ui(editEventForm);
             var title = $('#editEventTitle').val();
             var start_time = $('#startTimePicker').timepicker('getTime', start);
             var end_time = $('#endTimePicker').timepicker('getTime', end);
+            var event_type = event_type_select.val();
 
             $.post('/cal/edit_event_abs/' + calEvent.id,
                 { name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
-                  end_time: moment(end_time).format(DATETIME_FORMAT) }
+                  end_time: moment(end_time).format(DATETIME_FORMAT), event_type: event_type }
                 ).done(function(data) {
               $('#calendar').fullCalendar('refetchEvents');
               $('#dialog').dialog("close");
@@ -171,13 +179,21 @@
 
           $('#dialog').dialog('open');
         },
-        events: '/cal/get_event_feed', //Fetches events as a json feed from this url
+        eventSources: [
+          '/cal/get_event_feed', //Fetches events as a json feed from this url
+          {
+            url: '/cal/get_smart_scheduling_feed',
+            className: 'smart-scheduled-event',
+            editable: false,
+          }
+        ],
         defaultView: 'agendaWeek',
         navLinks: true,
         selectable: true,
         selectHelper: true,
         select: function(start, end, jsEvent) {
           var createEventForm = $('#createEventForm');
+          createEventForm.find('#id_event_type').val(null);
           reset_error_ui(createEventForm);
 
           $('#createEventTitle').val('');
@@ -193,10 +209,11 @@
             var title = $('#createEventTitle').val();
             var start_time = $('#createEventStartTimePicker').timepicker('getTime', start);
             var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
+            var event_type = createEventForm.find('#id_event_type').val();
 
             $.post('/cal/add_event', {
               name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
-              end_time: moment(end_time).format(DATETIME_FORMAT)
+              end_time: moment(end_time).format(DATETIME_FORMAT), event_type: event_type
             }, function(data) {
               $('#createEventDialog').dialog("close");
               $('#calendar').fullCalendar('unselect');
@@ -213,7 +230,7 @@
         },
         eventResize: function(calEvent, delta, revertFunc) {
           $.post('/cal/edit_event_rel/' + calEvent.id,
-            { name: calEvent.title, duration_delta: delta.asSeconds() }
+            { duration_delta: delta.asSeconds() }
           ).done(function(data) {
             $('#calendar').fullCalendar('refetchEvents');
             $('#dialog').dialog("close");
@@ -262,9 +279,7 @@
         <form class="form-add-class" name="enter-class" onsubmit="return false">
           <input name="course_str" type="text" id="course_str" placeholder="Add course by number (e.g. CS103)" />
           <input name="Submit" value="Add course" onclick="add_course()" type="Submit"
-          class="add-course-submit" />
-          <!--<button id="add-course-btn" onclick="add_course()" type="Submit" class="btn
-            btn-default">&nbsp;</button>-->
+                                                                         class="add-course-submit" />
         </form>
 
         <div class="logout-container">
@@ -290,6 +305,10 @@
             End time: <input type="text" id="endTimePicker" class="textbox-end_time">
             <span class="form-error-text label-end_time" style="display:none"></span>
           </p>
+          <p>
+            Event type:
+            {{ event_form.event_type }}
+          </p>
           <button class="small-button" name="EditEvent" id="editEventBtn" value="Submit" type="Submit"> Submit </button>
           <button class="small-delete-button" name="DeleteEvent" id="deleteEventBtn" type="button"> Delete Event </button>
         </form>
@@ -309,6 +328,10 @@
           <p>
             End time: <input type="text" id="createEventEndTimePicker" class="textbox-end_time">
             <span class="form-error-text label-end_time" style="display:none"></span>
+          </p>
+          <p>
+            Event type:
+            {{ event_form.event_type }}
           </p>
           <button class="small-button" name="CreateEvent" value="Submit" type="Submit"> Submit </button>
         </form>

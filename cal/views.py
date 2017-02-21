@@ -14,8 +14,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from .forms import EventForm, EditEventFormDelta
+from .forms import DateRangeForm, EventForm, EditEventFormDelta
 from .models import Event
+from .smart_scheduling import schedule as smart_schedule
+from .utils import daterange
 from courses.models import Course, Section
 from courses.utils import Quarter
 
@@ -87,12 +89,6 @@ def get_sections(course, term):
             term_quarter = term_quarter).order_by('section_number')
     return list(result)
 
-def daterange(start_date, end_date):
-    """ Taken from
-    http://stackoverflow.com/questions/1060279/iterating-through-a-range-of-dates-in-python """
-    for n in range(int ((end_date - start_date).days)):
-        yield start_date + timedelta(n)
-
 def add_section_events(user, section):
     """ Given a user and section object, adds and returns all relevant 
     events for the quarter to the database """
@@ -114,11 +110,22 @@ def add_section_events(user, section):
 
     return events
 
+def get_events_in_range(user, start_dt, end_dt):
+    """ Returns all Events for user within range [start_dt, end_dt), in ascending order by
+    start_time. """
+    return Event.objects.filter(Q(user=user),
+            Q(start_time__range=(start_dt, end_dt)) | Q(end_time__range=(start_dt,
+                end_dt))).order_by('start_time', 'end_time')
+
+
 # --- VIEWS ---
 @login_required
 @never_cache
 def index(request):
-    return render(request, 'cal/cal.html')
+    event_form = EventForm()
+    return render(request, 'cal/cal.html',
+            context={ 'event_form': EventForm(),
+                'event_type_choices': event_form.fields['event_type'].choices })
 
 @login_required
 @require_POST
@@ -165,54 +172,31 @@ def get_sections_for_course(request):
     return HttpResponse(json, content_type='application/json')
 
 @ajax_login_required
+def get_smart_scheduling_feed(request):
+    form = DateRangeForm(request.GET)
+    if not form.is_valid():
+        return HttpJsonResponseBadRequest(form.errors)
+
+    start_dt = form.cleaned_data['start']
+    end_dt = form.cleaned_data['end']
+    events = list(get_events_in_range(request.user, start_dt, end_dt))
+
+    scheduled_events = smart_schedule(start_dt, end_dt, events)
+    json_events = [e.to_dict() for e in scheduled_events]
+    json = simplejson.dumps(json_events)
+    return HttpResponse(json, content_type='application/json')
+
+@ajax_login_required
 def get_event_feed(request):
-    start = request.GET.get('start')
-    if start is None:
-        return HttpJsonResponseBadRequest("\"start\" param missing.")
-    try:
-        start_dt = dateutil.parser.parse(start) # datetime
-    except (ValueError, OverflowError) as e:
-        return HttpJsonResponseBadRequest("\"start\" param invalid: %s." % e)
+    form = DateRangeForm(request.GET)
+    if not form.is_valid():
+        return HttpJsonResponseBadRequest(form.errors)
 
-    end = request.GET.get('end')
-    if end is None:
-        return HttpJsonResponseBadRequest("\"end\" param missing.")
-    try:
-        end_dt = dateutil.parser.parse(end) # datetime
-    except (ValueError, OverflowError) as e:
-        return HttpJsonResponseBadRequest("\"end\" param invalid: %s." % e)
+    start_dt = form.cleaned_data['start']
+    end_dt = form.cleaned_data['end']
+    events = get_events_in_range(request.user, start_dt, end_dt)
 
-    # Maps Section id to Event id.
-    # This map exists because events in the same series should have the same id.
-    # If an Event is standalone, then just use its id.  If it's associated with a Section, use the
-    # id of the first Event in that series (stored in this map).
-    # TODO(zhangwen): this isn't pretty; we should probably have an event_id field.
-    section_event_ids = {}
-
-    events = Event.objects.filter(Q(user=request.user),
-            Q(start_time__range=(start_dt, end_dt)) | Q(end_time__range=(start_dt, end_dt)))
-    json_events = []
-    for event in events:
-        # See comment for section_event_ids.
-        if event.section is not None:
-            section = event.section
-            if section.id not in section_event_ids:
-                first_event_for_section = Event.objects.filter(user=request.user,
-                        section=section).order_by('id').first()
-                section_event_ids[section.id] = first_event_for_section.id
-
-            event_id = section_event_ids[section.id]
-        else:
-            event_id = event.id
-
-        json_event = {
-                'id': event_id,
-                'title': event.name,
-                'start': event.start_time.isoformat(),
-                'end': event.end_time.isoformat()
-        }
-        json_events.append(json_event)
-
+    json_events = [e.to_dict() for e in events]
     json = simplejson.dumps(json_events)
     return HttpResponse(json, content_type='application/json')
 
@@ -268,6 +252,7 @@ def edit_event_abs(request, event_id):
             event.start_time = datetime.datetime.combine(
                     event.start_time.date(), new_start_time.time())
             event.end_time = event.start_time + new_dt
+            event.event_type = form.cleaned_data['event_type']
             event.save()
 
     json = simplejson.dumps({'success': 'true'})
@@ -285,7 +270,6 @@ def edit_event_rel(request, event_id):
     form = EditEventFormDelta(request.POST)
     if not form.is_valid():
         return HttpJsonResponseBadRequest(form.errors)
-    title = form.cleaned_data['name']
     duration_delta = form.cleaned_data['duration_delta'] or timedelta()
     time_delta = form.cleaned_data['time_delta'] or timedelta()
 
@@ -296,7 +280,6 @@ def edit_event_rel(request, event_id):
         events = Event.objects.filter(user=request.user, section=section)
 
     for event in events:
-        event.name = title
         old_duration = event.end_time - event.start_time
         event.start_time += time_delta
         event.end_time = event.start_time + old_duration + duration_delta

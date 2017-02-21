@@ -17,7 +17,11 @@ class IntervalSecondsField(forms.IntegerField):
 class EventForm(forms.ModelForm):
     class Meta:
         model = Event
-        fields = ['name', 'start_time', 'end_time']
+        fields = ['name', 'start_time', 'end_time', 'event_type']
+
+    def __init__(self, *args, **kwargs):
+        super(EventForm, self).__init__(*args, **kwargs)
+        self.fields['event_type'].required = False
 
     def clean(self):
         cleaned_data = super(EventForm, self).clean()
@@ -26,13 +30,14 @@ class EventForm(forms.ModelForm):
         if start_time and end_time and (start_time > end_time):
             self.add_error('end_time', "End time must be later than start time.")
 
-class EditEventFormDelta(forms.ModelForm):
+class EditEventFormDelta(forms.Form):
     duration_delta = IntervalSecondsField(required=False)
     time_delta = IntervalSecondsField(required=False)
 
-    class Meta:
-        model = Event
-        fields = ['name']
-
     def save(self, commit=True):
         raise NotImplemented
+
+class DateRangeForm(forms.Form):
+    start = forms.DateField()
+    end = forms.DateField()
+
