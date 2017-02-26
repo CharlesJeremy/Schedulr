@@ -149,11 +149,14 @@
             var endDate = $('#editEventStartDate').datepicker( "getDate" );
             var end_time = $('#endTimePicker').timepicker('getTime', end);
 
+            var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
+            var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
+
             $.post('/cal/edit_event_abs/' + calEvent.id,
                 { name: title, 
                   start_date: startDate,
-                  start_time: moment(start_time).format(DATETIME_FORMAT),
-                  end_time: moment(end_time).format(DATETIME_FORMAT) }
+                  start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
+                  end_time: moment(new Date(event_end)).format(DATETIME_FORMAT) }
                 ).done(function(data) {
               $('#calendar').fullCalendar('refetchEvents');
               $('#dialog').dialog("close");
@@ -204,11 +207,8 @@
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
             var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
 
-            //console.log(new_date);
-            //console.log(new Date(event_start));
-            //console.log(new Date(event_end));
-
         
+
             $.post('/cal/add_event', {
               name: title, 
               start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
