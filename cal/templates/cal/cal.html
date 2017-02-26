@@ -144,11 +144,15 @@
           editEventForm.submit(function() {
             reset_error_ui(editEventForm);
             var title = $('#editEventTitle').val();
+            var startDate = $('#editEventStartDate').datepicker( "getDate" );
             var start_time = $('#startTimePicker').timepicker('getTime', start);
+            var endDate = $('#editEventStartDate').datepicker( "getDate" );
             var end_time = $('#endTimePicker').timepicker('getTime', end);
 
             $.post('/cal/edit_event_abs/' + calEvent.id,
-                { name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
+                { name: title, 
+                  start_date: startDate,
+                  start_time: moment(start_time).format(DATETIME_FORMAT),
                   end_time: moment(end_time).format(DATETIME_FORMAT) }
                 ).done(function(data) {
               $('#calendar').fullCalendar('refetchEvents');
@@ -191,12 +195,24 @@
             reset_error_ui(createEventForm);
 
             var title = $('#createEventTitle').val();
+            
+            var startDate = $('#createEventStartDate').datepicker("getDate");
             var start_time = $('#createEventStartTimePicker').timepicker('getTime', start);
+            var endDate = $('#createEventEndDate').datepicker("getDate");
             var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
 
+            var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
+            var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
+
+            //console.log(new_date);
+            //console.log(new Date(event_start));
+            //console.log(new Date(event_end));
+
+        
             $.post('/cal/add_event', {
-              name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
-              end_time: moment(end_time).format(DATETIME_FORMAT)
+              name: title, 
+              start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
+              end_time: moment(new Date(event_end)).format(DATETIME_FORMAT)
             }, function(data) {
               $('#createEventDialog').dialog("close");
               $('#calendar').fullCalendar('unselect');
@@ -244,9 +260,13 @@
       $('#createEventDialog').dialog({ autoOpen: false, close: function() {
         $('#calendar').fullCalendar('unselect');
       }});
+      $('#createEventStartDate').datepicker({defaultDate: 0});
       $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#createEventEndDate').datepicker({defaultDate: 0});
       $('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#editEventStartDate').datepicker({defaultDate: 0});
       $('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#editEventEndDate').datepicker({defaultDate: 0});
       $('#endTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
     });
@@ -283,10 +303,14 @@
             <span class="form-error-text label-name" style="display:none"></span>
           </p>
           <p>
+            Start date: <input type="text" id="editEventStartDate" class="textbox-date">
+            <span class="form-error-text label-date" style="display:none"></span>
             Start time: <input type="text" id="startTimePicker" class="textbox-start_time">
             <span class="form-error-text label-start_time" style="display:none"></span>
           </p>
           <p>
+            End date: <input type="text" id="editEventEndDate" class="textbox-date">
+            <span class="form-error-text label-date" style="display:none"></span>
             End time: <input type="text" id="endTimePicker" class="textbox-end_time">
             <span class="form-error-text label-end_time" style="display:none"></span>
           </p>
@@ -302,11 +326,15 @@
             <span class="form-error-text label-name" style="display:none"></span>
           </p>
           <p>
+            Start date: <input type="text" id="createEventStartDate" class="textbox-date">
+            <span class="form-error-text label-date" style="display:none"></span>
             Start time: <input type="text" id="createEventStartTimePicker"
               class="textbox-start_time">
             <span class="form-error-text label-start_time" style="display:none"></span>
           </p>
           <p>
+            End Date: <input type="text" id="createEventEndDate" class="textbox-date">
+            <span class="form-error-text label-date" style="display:none"></span>
             End time: <input type="text" id="createEventEndTimePicker" class="textbox-end_time">
             <span class="form-error-text label-end_time" style="display:none"></span>
           </p>
