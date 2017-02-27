@@ -74,6 +74,8 @@
 
         if (data.error) {
           $.notify('Course "' + course_str + '" not found.');
+        } else if (data.sections.length == 0) {
+          $.notify('Course "' + course_str + '" is not offered this quarter.');
         } else {
           $('#course_title').text(data.course_title);
           var sections_div = $('#sections_div');
