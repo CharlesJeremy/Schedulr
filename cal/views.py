@@ -70,21 +70,56 @@ def get_term():
     # Hardcoded for now 
     return (2016, Quarter.WINTER)
 
+def parse_course_no(user_input):
+    """
+    Parses strings such as 'CS194w', 'CS 194W', 'cs194W', etc. into ('CS', '194W').
+
+    Either of the two components of the pair might be None, if parsing fails.
+    """
+    user_input = re.sub(r"\s+", "", user_input, flags=re.UNICODE) # Get rid of whitespaces.
+    if not user_input: # String is empty.
+        return (None, None)
+
+    search = re.search("\d", user_input)
+    if search is None:
+        return (user_input, None) # Treat the entire string as subject code.
+
+    index = search.start(); # User input starts with a digit; invalid.
+    if index == 0:
+        return (None, None)
+
+    subject = user_input[:index].upper()
+    code = user_input[index:].upper()
+    return (subject, code)
+
 def get_course(user_input):
     """ Given a user string such as CS194, gets the course object
     from the database; also handles variations such as CS 194 and cs194"""
-    user_input = user_input.replace(" ", "");
-    search = re.search("\d", user_input)
-    if search is None:
+    # If a colon appears in the input, ignore everything after it (including).
+    user_input = user_input.split(':', 1)[0]
+
+    subject, code = parse_course_no(user_input)
+    if (not subject) or (not code):
         return None
-    index = search.start();
-    subject = user_input[:index].upper()
-    code = user_input[index:].upper()
-    result = Course.objects.filter(subject = subject, code = code)
-    if len(result) == 0:
+
+    result = Course.objects.filter(subject=subject, code=code)
+    if not result:
         return None
     # Otherwise we assume there is only one matching course
     return result.get()
+
+def search_courses(user_input, limit=5):
+    """ Searches courses by user_input.  Returns a list of (at most `limit`) courses. """
+    subject, code = parse_course_no(user_input)
+    if not subject:
+        return []
+
+    if not code: # Prefix search by subject.
+        result = Course.objects.filter(subject__startswith=subject)
+    else: # Exact match by subject, prefix search by code.
+        result = Course.objects.filter(subject=subject, code__startswith=code)
+
+    return list(result[:limit])
 
 def get_sections(course, term):
     """ Given a valid course object and term year/quarter, gets the related
@@ -420,4 +455,13 @@ def export_to_gcal_proceed(request):
     # Success!
     messages.success(request, "Export successful!")
     return redirect('cal:index')
+
+
+@ajax_login_required
+def autocomplete_course(request):
+    """ Search keyword is in GET param `term`. """
+    user_input = request.GET.get('term', "")
+    courses = search_courses(user_input)
+    json = simplejson.dumps([ unicode(course) for course in courses ])
+    return HttpResponse(json, content_type='application/json')
 

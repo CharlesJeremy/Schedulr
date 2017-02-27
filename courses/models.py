@@ -15,8 +15,12 @@ class Course(models.Model):
     class Meta:
         ordering = ('subject', 'code')
 
+    def course_no(self):
+        """ Returns course number, e.g. 'CS 194W'."""
+        return ('%s %s' % (self.subject, self.code)).upper()
+
     def __unicode__(self):
-        return '%s %s: %s' % (self.subject, self.code, self.title)
+        return '%s: %s' % (self.course_no(), self.title)
 
 
 class DaysOfWeekField(models.Field):

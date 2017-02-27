@@ -15,4 +15,5 @@ urlpatterns = [
         url(r'^edit_event_rel/(?P<event_id>\d+)$', views.edit_event_rel, name='edit_event_rel'),
         url(r'^export_auth$', views.export_to_gcal, name='export'),
         url(r'^export_proceed$', views.export_to_gcal_proceed, name='export_proceed'),
+        url(r'^search_courses$', views.autocomplete_course, name='autocomplete_course'),
 ]

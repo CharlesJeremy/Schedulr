@@ -58,9 +58,11 @@
       }
     }
 
-    function add_course() {
+    function add_course(course_str) {
       var course_str_box = $('#course_str');
-      var course_str = course_str_box.val();
+      if (course_str === undefined) {
+        course_str = course_str_box.val();
+      }
       if (!course_str) {
         course_str_box.notify('Please enter search string!', { 'position': 'bottom' });
         return;
@@ -129,6 +131,14 @@
           if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
             xhr.setRequestHeader("X-CSRFToken", csrftoken);
           }
+        }
+      });
+
+      $('#course_str').autocomplete({
+        source: '{% url "cal:autocomplete_course" %}',
+        select: function(event, ui) {
+          add_course(ui.item.value);
+          return true;
         }
       });
 
