@@ -151,9 +151,9 @@
           editEventForm.submit(function() {
             reset_error_ui(editEventForm);
             var title = $('#editEventTitle').val();
-            var startDate = $('#editEventStartDate').datepicker( "getDate" );
+            var startDate = $('#editEventStartDate').datepicker("getDate");
             var start_time = $('#startTimePicker').timepicker('getTime', start);
-            var endDate = $('#editEventEndDate').datepicker( "getDate" );
+            var endDate = $('#editEventEndDate').datepicker("getDate");
             var end_time = $('#endTimePicker').timepicker('getTime', end);
 
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
@@ -269,14 +269,14 @@
       $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#createEventEndDate').datepicker({defaultDate: 0});
       $('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
-      $('#colorpicker-create').simplecolorpicker();
+      //$('#colorpicker-create').simplecolorpicker();
 
       $('#dialog').dialog({ autoOpen: false });
       $('#editEventStartDate').datepicker({defaultDate: 0});
       $('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#editEventEndDate').datepicker({defaultDate: 0});
       $('#endTimePicker').timepicker({ 'scrollDefault': 'now' });
-      $('#colorpicker-edit').simplecolorpicker();
+      //$('#colorpicker-edit').simplecolorpicker();
 
       $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
 
