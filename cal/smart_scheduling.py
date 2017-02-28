@@ -69,7 +69,7 @@ def _schedule_showers(start_dt, end_dt, events):
                 if e.event_type == Event.SHOWER and e.start_time <= shower_start_dt]
         if prev_showers:
             prev_shower = max(prev_showers, key=lambda e: e.end_time)
-            if shower_start_dt - prev_shower.end_time < timedelta(hours=2):
+            if shower_start_dt - prev_shower.end_time < timedelta(hours=5):
                 continue
 
         shower_event = Event(name="Shower (bed time)", start_time=shower_start_dt,
