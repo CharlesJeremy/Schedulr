@@ -143,8 +143,13 @@
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
           var start = calEvent.start.local().toDate();
           var end = calEvent.end.local().toDate();
+
           $('#startTimePicker').timepicker('setTime', start); //Defaults to the event's current start time
           $('#endTimePicker').timepicker('setTime', end);
+          
+          $('#editEventStartDate').datepicker('setDate', start); //Defaults to the event's current start date
+          $('#editEventEndDate').datepicker('setDate', end); //Defaults to the event's current start date
+        
           editEventForm.off(); //Remove all previous handlers from the buttons
           $('#deleteEventBtn').off();
 
@@ -199,6 +204,9 @@
           var end_date_obj = end.local().toDate();
           $('#createEventStartTimePicker').timepicker('setTime', start_date_obj); //Defaults to the event's current start time
           $('#createEventEndTimePicker').timepicker('setTime', end_date_obj);
+
+          $('#createEventStartDate').datepicker('setDate', new Date()); //Defaults to the event's current start date
+          $('#createEventEndDate').datepicker('setDate', new Date()); //Defaults to the event's current start date
           createEventForm.off(); //Remove all previous handlers from the buttons
 
           createEventForm.submit(function() {
