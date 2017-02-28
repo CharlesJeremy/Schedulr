@@ -208,6 +208,7 @@
           $('#createEventStartDate').datepicker('setDate', new Date()); //Defaults to the event's current start date
           $('#createEventEndDate').datepicker('setDate', new Date()); //Defaults to the event's current start date
           $('#colorpicker-create').spectrum("set", 'blanchedalmond');
+
           createEventForm.off(); //Remove all previous handlers from the buttons
 
           createEventForm.submit(function() {
