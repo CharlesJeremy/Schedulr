@@ -204,8 +204,8 @@
           $('#createEventStartTimePicker').timepicker('setTime', start_date_obj); //Defaults to the event's current start time
           $('#createEventEndTimePicker').timepicker('setTime', end_date_obj);
 
-          $('#createEventStartDate').datepicker('setDate', new Date()); //Defaults to the event's current start date
-          $('#createEventEndDate').datepicker('setDate', new Date()); //Defaults to the event's current start date
+          $('#createEventStartDate').datepicker('setDate', start_date_obj); //Defaults to the event's current start date
+          $('#createEventEndDate').datepicker('setDate', end_date_obj); //Defaults to the event's current end date
           createEventForm.off(); //Remove all previous handlers from the buttons
 
           createEventForm.submit(function() {
