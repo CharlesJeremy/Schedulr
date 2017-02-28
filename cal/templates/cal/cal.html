@@ -4,28 +4,26 @@
   <head>
     <title>Schedulr</title>
     <link rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.css' />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
+    
     <link rel='stylesheet' href='{% static "styles.css" %}' />
-
     <link rel='stylesheet' href='{% static "cal/cal.css" %}' />
     <link rel='stylesheet' href='{% static "cal/jquery.timepicker.css" %}' />
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
-
-   <!--  <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.css">
-    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/font-awesome/4.0.0/css/font-awesome.css">
-    <link rel="stylesheet" href="jquery.simplecolorpicker.css">
-    <link rel="stylesheet" href="jquery.simplecolorpicker-regularfont.css">
-    <link rel="stylesheet" href="jquery.simplecolorpicker-glyphicons.css">
-    <link rel="stylesheet" href="jquery.simplecolorpicker-fontawesome.css"> -->
+    <link rel='stylesheet' href='{% static "cal/spectrum.css"%}' />
 
     <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.js'></script>
-    <script src='{% static "cal/jquery.timepicker.min.js" %}'> </script>
+    <script src='//cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.3/js.cookie.min.js'></script>
+    <script src='//cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js'></script>
 
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <script src='//cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.3/js.cookie.min.js'></script>
 
-    <script src='//cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js'></script>
+    <script src='{% static "cal/jquery.timepicker.min.js" %}'> </script>
+    <script src='{% static "cal/spectrum.js" %}'></script>
+
+  
+    
 
     <script type="text/javascript">
     var DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:SS';
@@ -160,6 +158,7 @@
             var start_time = $('#startTimePicker').timepicker('getTime', start);
             var endDate = $('#editEventEndDate').datepicker("getDate");
             var end_time = $('#endTimePicker').timepicker('getTime', end);
+            var color = $('#colorpicker-edit').val();
 
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
             var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
@@ -218,6 +217,8 @@
             var start_time = $('#createEventStartTimePicker').timepicker('getTime', start);
             var endDate = $('#createEventEndDate').datepicker("getDate");
             var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
+            var color = $('#colorpicker-create').val();
+
 
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
             var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
@@ -277,14 +278,34 @@
       $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#createEventEndDate').datepicker({defaultDate: 0});
       $('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
-      //$('#colorpicker-create').simplecolorpicker();
+      $('#colorpicker-create').spectrum({
+          showPaletteOnly: true,
+          showPalette:true,
+          hideAfterPaletteSelect:true,
+          color: 'blanchedalmond',
+          palette: [
+              ['black', 'white', 'blanchedalmond',
+              'rgb(255, 128, 0);', 'hsv 100 70 50'],
+              ['red', 'yellow', 'green', 'blue', 'violet']
+          ]
+      });
 
       $('#dialog').dialog({ autoOpen: false });
       $('#editEventStartDate').datepicker({defaultDate: 0});
       $('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#editEventEndDate').datepicker({defaultDate: 0});
       $('#endTimePicker').timepicker({ 'scrollDefault': 'now' });
-      //$('#colorpicker-edit').simplecolorpicker();
+      $('#colorpicker-edit').spectrum({
+          showPaletteOnly: true,
+          showPalette:true,
+          hideAfterPaletteSelect:true,
+          color: 'blanchedalmond',
+          palette: [
+              ['black', 'white', 'blanchedalmond',
+              'rgb(255, 128, 0);', 'hsv 100 70 50'],
+              ['red', 'yellow', 'green', 'blue', 'violet']
+          ]
+      });
 
       $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
 
@@ -333,34 +354,9 @@
             End time: <input type="text" id="endTimePicker" class="textbox-end_time">
             <span class="form-error-text label-end_time" style="display:none"></span>
           </p>
-          <!-- <p>
-            <select id="colorpicker-edit">
-              <option value="#ac725e">#ac725e</option>
-              <option value="#d06b64">#d06b64</option>
-              <option value="#f83a22">#f83a22</option>
-              <option value="#fa573c">#fa573c</option>
-              <option value="#ff7537">#ff7537</option>
-              <option value="#ffad46">#ffad46</option>
-              <option value="#42d692">#42d692</option>
-              <option value="#16a765">#16a765</option>
-              <option value="#7bd148">#7bd148</option>
-              <option value="#b3dc6c">#b3dc6c</option>
-              <option value="#fbe983">#fbe983</option>
-              <option value="#fad165">#fad165</option>
-              <option value="#92e1c0">#92e1c0</option>
-              <option value="#9fe1e7">#9fe1e7</option>
-              <option value="#9fc6e7">#9fc6e7</option>
-              <option value="#4986e7">#4986e7</option>
-              <option value="#9a9cff">#9a9cff</option>
-              <option value="#b99aff">#b99aff</option>
-              <option value="#c2c2c2">#c2c2c2</option>
-              <option value="#cabdbf">#cabdbf</option>
-              <option value="#cca6ac">#cca6ac</option>
-              <option value="#f691b2">#f691b2</option>
-              <option value="#cd74e6">#cd74e6</option>
-              <option value="#a47ae2">#a47ae2</option>
-            </select>
-          </p> -->
+          <p>
+            Event Color: <input id="colorpicker-edit">  
+          </p>
           <button class="small-button" name="EditEvent" id="editEventBtn" value="Submit" type="Submit"> Submit </button>
           <button class="small-delete-button" name="DeleteEvent" id="deleteEventBtn" type="button"> Delete Event </button>
         </form>
@@ -385,34 +381,9 @@
             End time: <input type="text" id="createEventEndTimePicker" class="textbox-end_time">
             <span class="form-error-text label-end_time" style="display:none"></span>
           </p>
-         <!--  <p>
-            <select id="colorpicker-create">
-              <option value="#ac725e">#ac725e</option>
-              <option value="#d06b64">#d06b64</option>
-              <option value="#f83a22">#f83a22</option>
-              <option value="#fa573c">#fa573c</option>
-              <option value="#ff7537">#ff7537</option>
-              <option value="#ffad46">#ffad46</option>
-              <option value="#42d692">#42d692</option>
-              <option value="#16a765">#16a765</option>
-              <option value="#7bd148">#7bd148</option>
-              <option value="#b3dc6c">#b3dc6c</option>
-              <option value="#fbe983">#fbe983</option>
-              <option value="#fad165">#fad165</option>
-              <option value="#92e1c0">#92e1c0</option>
-              <option value="#9fe1e7">#9fe1e7</option>
-              <option value="#9fc6e7">#9fc6e7</option>
-              <option value="#4986e7">#4986e7</option>
-              <option value="#9a9cff">#9a9cff</option>
-              <option value="#b99aff">#b99aff</option>
-              <option value="#c2c2c2">#c2c2c2</option>
-              <option value="#cabdbf">#cabdbf</option>
-              <option value="#cca6ac">#cca6ac</option>
-              <option value="#f691b2">#f691b2</option>
-              <option value="#cd74e6">#cd74e6</option>
-              <option value="#a47ae2">#a47ae2</option>
-            </select>
-          </p> -->
+           <p>
+            Event Color: <input id="colorpicker-create">  
+          </p>
           <button class="small-button" name="CreateEvent" value="Submit" type="Submit"> Submit </button>
         </form>
       </div>
