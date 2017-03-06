@@ -101,6 +101,25 @@
       }, 'json');
     }
 
+    function initialize_edit_auto_event_dialog() {
+      var autoEventForm = $('#edit-auto-event');
+      reset_error_ui(autoEventForm);
+      $('#edit_auto_event_dialog').dialog('open');    }
+
+    // TODO (backend): When the user clicks submit btn in the edit_auto_event_dialog, send
+    // data to the backend to update the default start/end/color for auto 
+    // generated events
+    function edit_auto_event_submit() {
+      var event_type_select = $('#edit-auto-event').find('#id_event_type');
+      var event_type = event_type_select.val();
+      if (event_type != "") {
+        var start_time = $('#autoStartTimePicker').timepicker('getTime', new Date());
+        var end_time = $('#autoEndTimePicker').timepicker('getTime', new Date());
+
+        //TODO: post to backend, add color picker
+      }
+    }
+
     $(document).ajaxError(function(event, request, settings) {
       if (request.readyState == 0) {
         $.notify("Connection failed. Please check your internet connection.");
@@ -282,10 +301,14 @@
       $('#createEventDialog').dialog({ autoOpen: false, close: function() {
         $('#calendar').fullCalendar('unselect');
       }});
+      $('#edit_auto_event_dialog').dialog({ autoOpen: false});
       $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#endTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#autoStartTimePicker').timepicker();
+      $('#autoEndTimePicker').timepicker();
+
       $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
     });
     </script>
@@ -313,6 +336,10 @@
                       <span class="ui-icon ui-icon-calendar"></span>
                       <a href="{% url 'cal:export' %}">Export</a>
                   </div></li>
+                  <li><div>
+                      <span class="ui-icon ui-icon-clipboard"></span>
+                      <a href="#" onclick="initialize_edit_auto_event_dialog()">Auto events</a>
+                    </div></li>
                   <li><div>
                     <form id="logout_form" action="/accounts/logout/" method="post">
                       {% csrf_token %}
@@ -374,6 +401,25 @@ $( "#menu" ).menu({
             {{ event_form.event_type }}
           </p>
           <button class="small-button" name="CreateEvent" value="Submit" type="Submit"> Submit </button>
+        </form>
+      </div>
+ 
+      <div id="edit_auto_event_dialog" style="display: none" title="Edit auto events">
+        <form class="form-edit-auto-event" name="edit-auto-event" id="edit-auto-event" onsubmit="return false">
+          Event type:
+          {{ event_form.event_type }}
+
+          <p>
+            Default start time: <input type="text" id="autoStartTimePicker" class="textbox-start_time">
+            <span class="form-error-text label-start_time" style="display:none"></span>
+          </p>
+
+          <p>
+            Default end time: <input type="text" id="autoEndTimePicker" class="textbox-end_time">
+            <span class="form-error-text label-end_time" style="display:none"></span>
+          </p>
+
+          <input name="Submit" value="Edit auto event" onclick="edit_auto_event_submit()" type="Submit"                                                                       class="edit-auto-event-submit" />
         </form>
       </div>
 
