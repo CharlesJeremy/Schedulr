@@ -304,7 +304,6 @@
         </form>
 
         <div class="logout-container">
-            {% csrf_token %}
             <p>Welcome, <b>{{ user }}</b>.</p>
             <p>
               <ul id="menu"><li>
@@ -316,6 +315,7 @@
                   </div></li>
                   <li><div>
                     <form id="logout_form" action="/accounts/logout/" method="post">
+                      {% csrf_token %}
                       <span class="ui-icon ui-icon-arrowthickstop-1-w"></span>
                       <a href="#" onclick="document.getElementById('logout_form').submit()">Logout</a>
                     </form>
