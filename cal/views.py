@@ -76,6 +76,7 @@ def parse_course_no(user_input):
 
     Either of the two components of the pair might be None, if parsing fails.
     """
+    user_input = user_input.upper()
     user_input = re.sub(r"\s+", "", user_input, flags=re.UNICODE) # Get rid of whitespaces.
     if not user_input: # String is empty.
         return (None, None)
@@ -88,8 +89,8 @@ def parse_course_no(user_input):
     if index == 0:
         return (None, None)
 
-    subject = user_input[:index].upper()
-    code = user_input[index:].upper()
+    subject = user_input[:index]
+    code = user_input[index:]
     return (subject, code)
 
 def get_course(user_input):
