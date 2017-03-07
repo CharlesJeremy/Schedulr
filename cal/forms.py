@@ -30,7 +30,11 @@ class EventForm(forms.ModelForm):
         if start_time and end_time and (start_time > end_time):
             self.add_error('end_time', "End time must be later than start time.")
 
-class EditEventFormDelta(forms.Form):
+class EditEventFormDelta(forms.ModelForm):
+    class Meta: # start_time and end_time fields might not be used.
+        model = Event
+        fields = ['start_time', 'end_time']
+
     duration_delta = IntervalSecondsField(required=False)
     time_delta = IntervalSecondsField(required=False)
 

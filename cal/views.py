@@ -23,6 +23,7 @@ from oauth2client import client
 from .forms import DateRangeForm, EventForm, EditEventFormDelta
 from .models import Event
 from .smart_scheduling import schedule as smart_schedule
+from .smart_scheduling import update_smart_scheduling_prefs
 from .utils import daterange, next_weekday
 from courses.models import Course, Section
 from courses.utils import Quarter
@@ -234,10 +235,8 @@ def get_smart_scheduling_feed(request):
     end_dt = form.cleaned_data['end']
     events = list(get_events_in_range(request.user, start_dt, end_dt))
 
-    scheduled_events = smart_schedule(start_dt, end_dt, events)
-    json_events = [e.to_dict() for e in scheduled_events]
-    json = simplejson.dumps(json_events)
-    return HttpResponse(json, content_type='application/json')
+    json_scheduled_events = smart_schedule(request.user, start_dt, end_dt, events)
+    return HttpResponse(json_scheduled_events, content_type='application/json')
 
 @ajax_login_required
 def get_event_feed(request):
@@ -295,6 +294,7 @@ def edit_event_abs(request, event_id):
     section = event.section
     if section is None: # Just update this event.
         form.save()
+        update_smart_scheduling_prefs(event)
     else: # Update all events associated with this section.
         new_start_time = form.cleaned_data['start_time']
         new_end_time = form.cleaned_data['end_time']
@@ -339,6 +339,9 @@ def edit_event_rel(request, event_id):
         event.start_time += time_delta
         event.end_time = event.start_time + old_duration + duration_delta
         event.save()
+        update_smart_scheduling_prefs(event,
+                duration_changed='resize' in request.GET,
+                time_changed='drop' in request.GET)
 
     json = simplejson.dumps({'success': 'true'})
     return HttpResponse(json, content_type='application/json')
@@ -468,3 +471,39 @@ def autocomplete_course(request):
     json = simplejson.dumps([ unicode(course) for course in courses ])
     return HttpResponse(json, content_type='application/json')
 
+
+@ajax_login_required
+@require_POST
+@transaction.atomic
+def edit_smart_event_shower_exercise(request, scheduled_for_id):
+    exercise_event = get_object_or_404(Event, user=request.user, id=int(scheduled_for_id))
+
+    form = EventForm(request.POST)
+    if not form.is_valid():
+        return HttpJsonResponseBadRequest(form.errors)
+
+    shower_event = form.save(commit=False)
+    shower_event.user = request.user
+    shower_event.smart_schedule_info = { 'type': 'shower_exercise' }
+    shower_event.smart_scheduled_for = exercise_event
+    shower_event.save()
+    update_smart_scheduling_prefs(shower_event)
+
+    # User takes control of shower event; we no longer auto schedule shower
+    # for this exercise event.
+    exercise_event.dont_smart_schedule = True
+    exercise_event.save()
+
+    json = simplejson.dumps({'success': 'true', 'id': shower_event.id})
+    return HttpResponse(json, content_type='application/json')
+
+@ajax_login_required
+@require_POST
+def delete_smart_event_shower_exercise(request, scheduled_for_id):
+    exercise_event = get_object_or_404(Event, user=request.user, id=int(scheduled_for_id))
+    # Just mark it as "don't schedule".
+    exercise_event.dont_smart_schedule=True
+    exercise_event.save()
+
+    json = simplejson.dumps({'success': 'true'})
+    return HttpResponse(json, content_type='application/json')
