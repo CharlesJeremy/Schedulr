@@ -17,7 +17,7 @@ class IntervalSecondsField(forms.IntegerField):
 class EventForm(forms.ModelForm):
     class Meta:
         model = Event
-        fields = ['name', 'start_time', 'end_time', 'event_type']
+        fields = ['name', 'start_time', 'end_time', 'event_type', 'color']
 
     def __init__(self, *args, **kwargs):
         super(EventForm, self).__init__(*args, **kwargs)

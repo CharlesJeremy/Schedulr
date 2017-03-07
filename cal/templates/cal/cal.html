@@ -216,7 +216,8 @@
                 { name: title, 
                   start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
                   end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
-                  event_type: event_type }
+                  event_type: event_type,
+                  color: color }
                 ).done(function(data) {
               $('#calendar').fullCalendar('refetchEvents');
               $('#dialog').dialog("close");
@@ -286,7 +287,8 @@
               name: title, 
               start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
               end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
-              event_type: event_type
+              event_type: event_type,
+              color: color
             }, function(data) {
               $('#createEventDialog').dialog("close");
               $('#calendar').fullCalendar('unselect');

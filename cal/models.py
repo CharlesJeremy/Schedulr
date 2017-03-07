@@ -32,6 +32,7 @@ class Event(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     event_type = models.PositiveIntegerField(choices=EVENT_TYPE_CHOICES, null=True)
+    color = models.CharField(max_length=25, default='red')
 
     def to_dict(self):
         """ To jsonify Event. """
@@ -40,6 +41,7 @@ class Event(models.Model):
                 'start': self.start_time.isoformat(),
                 'end': self.end_time.isoformat(),
                 'event_type': self.event_type or None,
+                'color': self.color
         }
         if self.id is not None:
             json_event['id'] = self.id
