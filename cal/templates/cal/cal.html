@@ -4,21 +4,26 @@
   <head>
     <title>Schedulr</title>
     <link rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.css' />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
+    
     <link rel='stylesheet' href='{% static "styles.css" %}' />
-
     <link rel='stylesheet' href='{% static "cal/cal.css" %}' />
     <link rel='stylesheet' href='{% static "cal/jquery.timepicker.css" %}' />
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
+    <link rel='stylesheet' href='{% static "cal/spectrum.css"%}' />
 
     <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js'></script>
     <script src='//cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.1.0/fullcalendar.js'></script>
-    <script src='{% static "cal/jquery.timepicker.min.js" %}'> </script>
+    <script src='//cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.3/js.cookie.min.js'></script>
+    <script src='//cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js'></script>
 
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <script src='//cdnjs.cloudflare.com/ajax/libs/js-cookie/2.1.3/js.cookie.min.js'></script>
 
-    <script src='//cdnjs.cloudflare.com/ajax/libs/notify/0.4.2/notify.min.js'></script>
+    <script src='{% static "cal/jquery.timepicker.min.js" %}'> </script>
+    <script src='{% static "cal/spectrum.js" %}'></script>
+
+  
+    
 
     <script type="text/javascript">
       var event_type_choices = {
@@ -163,6 +168,24 @@
         }
       });
 
+      /* Returns calEvent info as JS object. */
+      function get_info_from_calEvent(calEvent) {
+        var info = {
+          name: calEvent.title,
+          start_time: calEvent.start.format(DATETIME_FORMAT),
+          end_time: calEvent.end.format(DATETIME_FORMAT),
+        };
+
+        if (calEvent.event_type) {
+          info.event_type = calEvent.event_type;
+        }
+        if (calEvent.color !== undefined) {
+          info.color = calEvent.color;
+        }
+
+        return info;
+      }
+
       $('#calendar').fullCalendar({
         height: 'parent',
         nowIndicator: true,
@@ -172,17 +195,20 @@
           right: 'agendaWeek,agendaDay,month'
         },
         eventClick: function(calEvent, jsEvent, view) {
-          if (calEvent.source.editable === false) {
-            return false;
-          }
-
           var editEventForm = $('#editEventForm');
           reset_error_ui(editEventForm);
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
           var start = calEvent.start.local().toDate();
           var end = calEvent.end.local().toDate();
+          var color = calEvent.color;
+
           $('#startTimePicker').timepicker('setTime', start); //Defaults to the event's current start time
           $('#endTimePicker').timepicker('setTime', end);
+          
+          $('#editEventStartDate').datepicker('setDate', start); //Defaults to the event's current start date
+          $('#editEventEndDate').datepicker('setDate', end); //Defaults to the event's current start date
+      
+          $('#colorpicker-edit').spectrum("set", color);
           editEventForm.off(); //Remove all previous handlers from the buttons
           $('#deleteEventBtn').off();
           var event_type_select = editEventForm.find('#id_event_type');
@@ -191,13 +217,28 @@
           editEventForm.submit(function() {
             reset_error_ui(editEventForm);
             var title = $('#editEventTitle').val();
+            var startDate = $('#editEventStartDate').datepicker("getDate");
             var start_time = $('#startTimePicker').timepicker('getTime', start);
+            var endDate = $('#editEventEndDate').datepicker("getDate");
             var end_time = $('#endTimePicker').timepicker('getTime', end);
             var event_type = event_type_select.val();
+            var color = $('#colorpicker-edit').val();
 
-            $.post('/cal/edit_event_abs/' + calEvent.id,
-                { name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
-                  end_time: moment(end_time).format(DATETIME_FORMAT), event_type: event_type }
+            var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
+            var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
+
+            var url;
+            if (calEvent.schedule_type === undefined) { // Just an ordinary event.
+              url = '/cal/edit_event_abs/' + calEvent.id;
+            } else { // A smart-scheduled event.
+              url = '/cal/edit_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
+            }
+            $.post(url,
+                { name: title, 
+                  start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
+                  end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
+                  event_type: event_type,
+                  color: color }
                 ).done(function(data) {
               $('#calendar').fullCalendar('refetchEvents');
               $('#dialog').dialog("close");
@@ -210,7 +251,14 @@
           });
 
           $('#deleteEventBtn').click(function() {
-            $.post('/cal/delete_event/' + calEvent.id, function() {
+            var url;
+            if (calEvent.schedule_type === undefined) { // Just an ordinary event.
+              url = '/cal/delete_event/' + calEvent.id;
+            } else { // A smart-scheduled event.
+              url = '/cal/delete_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
+            }
+
+            $.post(url, function() {
               $('#calendar').fullCalendar('refetchEvents');
             });
             $('#dialog').dialog("close");
@@ -224,7 +272,6 @@
           {
             url: '/cal/get_smart_scheduling_feed',
             className: 'smart-scheduled-event',
-            editable: false,
           }
         ],
         defaultView: 'agendaWeek',
@@ -241,19 +288,34 @@
           var end_date_obj = end.local().toDate();
           $('#createEventStartTimePicker').timepicker('setTime', start_date_obj); //Defaults to the event's current start time
           $('#createEventEndTimePicker').timepicker('setTime', end_date_obj);
+
+          $('#createEventStartDate').datepicker('setDate', start_date_obj); //Defaults to the event's current start date
+          $('#createEventEndDate').datepicker('setDate', end_date_obj); //Defaults to the event's current start date
+          $('#colorpicker-create').spectrum("set", 'red');
+
           createEventForm.off(); //Remove all previous handlers from the buttons
 
           createEventForm.submit(function() {
             reset_error_ui(createEventForm);
 
             var title = $('#createEventTitle').val();
+            
+            var startDate = $('#createEventStartDate').datepicker("getDate");
             var start_time = $('#createEventStartTimePicker').timepicker('getTime', start);
+            var endDate = $('#createEventEndDate').datepicker("getDate");
             var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
             var event_type = createEventForm.find('#id_event_type').val();
+            var color = $('#colorpicker-create').val();
+
+            var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
+            var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
 
             $.post('/cal/add_event', {
-              name: title, start_time: moment(start_time).format(DATETIME_FORMAT),
-              end_time: moment(end_time).format(DATETIME_FORMAT), event_type: event_type
+              name: title, 
+              start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
+              end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
+              event_type: event_type,
+              color: color
             }, function(data) {
               $('#createEventDialog').dialog("close");
               $('#calendar').fullCalendar('unselect');
@@ -269,9 +331,17 @@
           $('#createEventDialog').dialog('open');
         },
         eventResize: function(calEvent, delta, revertFunc) {
-          $.post('/cal/edit_event_rel/' + calEvent.id,
-            { duration_delta: delta.asSeconds() }
-          ).done(function(data) {
+          var post_params = get_info_from_calEvent(calEvent);
+          $.extend(post_params, { duration_delta: delta.asSeconds() });
+
+          var url;
+          if (calEvent.schedule_type === undefined) { // Just an ordinary event.
+            url = '/cal/edit_event_rel/' + calEvent.id + "?resize=resize";
+          } else { // A smart-scheduled event.
+            url = '/cal/edit_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
+          }
+
+          $.post(url, post_params).done(function(data) {
             $('#calendar').fullCalendar('refetchEvents');
             $('#dialog').dialog("close");
             $('#createEventDialog').dialog("close");
@@ -281,9 +351,17 @@
           });
         },
         eventDrop: function(calEvent, delta, revertFunc) {
-          $.post('/cal/edit_event_rel/' + calEvent.id,
-            { name: calEvent.title, time_delta: delta.asSeconds() }
-          ).done(function(data) {
+          var post_params = get_info_from_calEvent(calEvent);
+          $.extend(post_params, { time_delta: delta.asSeconds() });
+
+          var url;
+          if (calEvent.schedule_type === undefined) { // Just an ordinary event.
+            url = '/cal/edit_event_rel/' + calEvent.id + "?drop=drop";
+          } else { // A smart-scheduled event.
+            url = '/cal/edit_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
+          }
+
+          $.post(url, post_params).done(function(data) {
             $('#calendar').fullCalendar('refetchEvents');
             $('#dialog').dialog("close");
           }).fail(function(jqXHR, textStatus, errorThrown) {
@@ -297,19 +375,44 @@
         unselectAuto: false,
       });
 
-      $('#dialog').dialog({ autoOpen: false });
+     
       $('#createEventDialog').dialog({ autoOpen: false, close: function() {
         $('#calendar').fullCalendar('unselect');
       }});
+      $('#createEventStartDate').datepicker({defaultDate: 0});
       $('#edit_auto_event_dialog').dialog({ autoOpen: false});
       $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#createEventEndDate').datepicker({defaultDate: 0});
       $('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#colorpicker-create').spectrum({
+          showPaletteOnly: true,
+          showPalette:true,
+          hideAfterPaletteSelect:true,
+          color: 'red',
+          palette: [
+              ['hotpink', 'crimson', 'red', 'orangered', 'coral', 'yellow'],
+              ['seagreen', 'green', 'turquoise', 'aqua', 'rebeccapurple', 'indigo']
+          ]
+      });
+
+      $('#dialog').dialog({ autoOpen: false });
+      $('#editEventStartDate').datepicker({defaultDate: 0});
       $('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#editEventEndDate').datepicker({defaultDate: 0});
       $('#endTimePicker').timepicker({ 'scrollDefault': 'now' });
+      $('#colorpicker-edit').spectrum({
+          showPaletteOnly: true,
+          showPalette:true,
+          hideAfterPaletteSelect:true,
+          palette: [
+              ['hotpink', 'crimson', 'red', 'orangered', 'coral', 'yellow'],
+              ['seagreen', 'green', 'turquoise', 'aqua', 'rebeccapurple', 'indigo']
+          ]
+      });
       $('#autoStartTimePicker').timepicker();
       $('#autoEndTimePicker').timepicker();
-
       $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
+
     });
     </script>
   </head>
@@ -365,13 +468,20 @@ $( "#menu" ).menu({
             <span class="form-error-text label-name" style="display:none"></span>
           </p>
           <p>
+            Start date: <input type="text" id="editEventStartDate" class="textbox-date">
+            <span class="form-error-text label-date" style="display:none"></span>
             Start time: <input type="text" id="startTimePicker" class="textbox-start_time">
             <span class="form-error-text label-start_time" style="display:none"></span>
           </p>
           <p>
+            End date: <input type="text" id="editEventEndDate" class="textbox-date">
+            <span class="form-error-text label-date" style="display:none"></span>
             End time: <input type="text" id="endTimePicker" class="textbox-end_time">
             <span class="form-error-text label-end_time" style="display:none"></span>
           </p>
+          <p>
+            Event Color: <input id="colorpicker-edit">
+          </p> 
           <p>
             Event type:
             {{ event_form.event_type }}
@@ -388,13 +498,20 @@ $( "#menu" ).menu({
             <span class="form-error-text label-name" style="display:none"></span>
           </p>
           <p>
+            Start date: <input type="text" id="createEventStartDate" class="textbox-date">
+            <span class="form-error-text label-date" style="display:none"></span>
             Start time: <input type="text" id="createEventStartTimePicker"
               class="textbox-start_time">
             <span class="form-error-text label-start_time" style="display:none"></span>
           </p>
           <p>
+            End Date: <input type="text" id="createEventEndDate" class="textbox-date">
+            <span class="form-error-text label-date" style="display:none"></span>
             End time: <input type="text" id="createEventEndTimePicker" class="textbox-end_time">
             <span class="form-error-text label-end_time" style="display:none"></span>
+          </p>
+          <p>
+            Event Color: <input id="colorpicker-create"> 
           </p>
           <p>
             Event type:

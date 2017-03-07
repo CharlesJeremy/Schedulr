@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'cal',
     'registration',
 
+    'annoying',
     'nested_admin',
     'admin_views',
 

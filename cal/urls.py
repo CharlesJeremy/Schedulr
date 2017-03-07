@@ -16,4 +16,8 @@ urlpatterns = [
         url(r'^export_auth$', views.export_to_gcal, name='export'),
         url(r'^export_proceed$', views.export_to_gcal_proceed, name='export_proceed'),
         url(r'^search_courses$', views.autocomplete_course, name='autocomplete_course'),
+        url(r'^edit_smart_event/shower_exercise/(?P<scheduled_for_id>\d+)$',
+            views.edit_smart_event_shower_exercise),
+        url(r'^delete_smart_event/shower_exercise/(?P<scheduled_for_id>\d+)$',
+            views.delete_smart_event_shower_exercise),
 ]
