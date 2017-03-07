@@ -148,7 +148,7 @@
           $('#editEventStartDate').datepicker('setDate', start); //Defaults to the event's current start date
           $('#editEventEndDate').datepicker('setDate', end); //Defaults to the event's current start date
       
-          $('#colorpicker-edit').spectrum("set", 'blanchedalmond');
+          $('#colorpicker-edit').spectrum("set", 'red');
           editEventForm.off(); //Remove all previous handlers from the buttons
           $('#deleteEventBtn').off();
 
@@ -207,7 +207,7 @@
 
           $('#createEventStartDate').datepicker('setDate', start_date_obj); //Defaults to the event's current start date
           $('#createEventEndDate').datepicker('setDate', end_date_obj); //Defaults to the event's current start date
-          $('#colorpicker-create').spectrum("set", 'blanchedalmond');
+          $('#colorpicker-create').spectrum("set", 'red');
 
           createEventForm.off(); //Remove all previous handlers from the buttons
 
@@ -221,7 +221,6 @@
             var endDate = $('#createEventEndDate').datepicker("getDate");
             var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
             var color = $('#colorpicker-create').val();
-
 
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
             var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
@@ -285,11 +284,10 @@
           showPaletteOnly: true,
           showPalette:true,
           hideAfterPaletteSelect:true,
-          color: 'blanchedalmond',
+          color: 'red',
           palette: [
-              ['black', 'white', 'blanchedalmond',
-              'rgb(255, 128, 0);', 'hsv 100 70 50'],
-              ['red', 'yellow', 'green', 'blue', 'violet']
+              ['hotpink', 'crimson', 'red', 'orangered', 'coral', 'yellow'],
+              ['seagreen', 'green', 'turquoise', 'aqua', 'rebeccapurple', 'indigo']
           ]
       });
 
@@ -302,11 +300,10 @@
           showPaletteOnly: true,
           showPalette:true,
           hideAfterPaletteSelect:true,
-          color: 'blanchedalmond',
+          color: 'red',
           palette: [
-              ['black', 'white', 'blanchedalmond',
-              'rgb(255, 128, 0);', 'hsv 100 70 50'],
-              ['red', 'yellow', 'green', 'blue', 'violet']
+              ['hotpink', 'crimson', 'red', 'orangered', 'coral', 'yellow'],
+              ['seagreen', 'green', 'turquoise', 'aqua', 'rebeccapurple', 'indigo']
           ]
       });
 
