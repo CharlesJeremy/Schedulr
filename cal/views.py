@@ -234,7 +234,7 @@ def get_smart_scheduling_feed(request):
     end_dt = form.cleaned_data['end']
     events = list(get_events_in_range(request.user, start_dt, end_dt))
 
-    scheduled_events = smart_schedule(start_dt, end_dt, events)
+    scheduled_events = smart_schedule(request.user, start_dt, end_dt, events)
     json_events = [e.to_dict() for e in scheduled_events]
     json = simplejson.dumps(json_events)
     return HttpResponse(json, content_type='application/json')

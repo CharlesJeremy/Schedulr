@@ -5,13 +5,13 @@ from .models import Event
 from .utils import daterange
 
 
-SHOWER_DURATION = timedelta(minutes=30)
+DEFAULT_SHOWER_DURATION = timedelta(minutes=30)
 DEFAULT_BED_SHOWER_TIME = datetime.time(hour=22)
 BED_TIME_LIMIT = datetime.time(hour=3)
 
 
-def _schedule_showers(start_dt, end_dt, events):
-    """ Schedules shower events. """
+def _schedule_showers(prefs, start_dt, end_dt, events):
+    """ Schedules shower events for user. """
     shower_events = []
 
     # First, schedule a showers after each exercise block.
@@ -20,6 +20,10 @@ def _schedule_showers(start_dt, end_dt, events):
 
     events_with_dummy_exercise = events + [Event(event_type=Event.EXERCISE,
         start_time=datetime.datetime.max, end_time=datetime.datetime.max)]
+
+    # User preferences.
+    exercise_shower_delta = prefs.exercise_shower_delta
+    exercise_shower_duration = prefs.exercise_shower_duration
 
     for event in events_with_dummy_exercise:
         if event.event_type != Event.EXERCISE:
@@ -34,8 +38,10 @@ def _schedule_showers(start_dt, end_dt, events):
         else:
             # The previous exercise block has ended; schedule a shower.
             # TODO(zhangwen): what if there's a conflict?
-            shower_event = Event(name="Shower (exercise)", start_time=block_end_event.end_time,
-                    end_time=block_end_event.end_time + SHOWER_DURATION,
+            shower_start_time = block_end_event.end_time + exercise_shower_delta
+            shower_event = Event(name="Shower (exercise)",
+                    start_time=shower_start_time,
+                    end_time=shower_start_time + exercise_shower_duration,
                     event_type=Event.SHOWER)
             shower_events.append(shower_event)
 
@@ -73,18 +79,20 @@ def _schedule_showers(start_dt, end_dt, events):
                 continue
 
         shower_event = Event(name="Shower (bed time)", start_time=shower_start_dt,
-                end_time=shower_start_dt + SHOWER_DURATION,
+                end_time=shower_start_dt + DEFAULT_SHOWER_DURATION,
                 event_type=Event.SHOWER)
         shower_events.append(shower_event)
 
     return shower_events
 
 
-def schedule(start_dt, end_dt, events):
-    """ Returns a list of smart-scheduled events based on existing events.
+def schedule(user, start_dt, end_dt, events):
+    """
+    Returns a list of smart-scheduled events based on existing events and user's preferences.
     
     `events` is sorted by (start_time, end_time).
     """
     scheduled_events = []
-    scheduled_events.extend(_schedule_showers(start_dt, end_dt, events))
+    scheduled_events.extend(_schedule_showers(
+        user.scheduling_prefs, start_dt, end_dt, events))
     return scheduled_events

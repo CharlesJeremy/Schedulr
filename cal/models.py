@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
-import itertools
+from datetime import timedelta
 
 from django.db import models
+
+from annoying.fields import AutoOneToOneField
 
 from courses.models import Section
 from django.contrib.auth.models import User
@@ -48,3 +50,20 @@ class Event(models.Model):
         if self.event_type:
             json_event['className'] = self.EVENT_TYPE_TO_STRING[self.event_type]
         return json_event
+
+
+class SmartSchedulingPrefs(models.Model):
+    """
+    Auto-scheduling preferences for a User.
+
+    Every field of this model MUST either be nullable or have a default value.
+    """
+    user = AutoOneToOneField(User, on_delete=models.CASCADE, primary_key=True,
+            related_name='scheduling_prefs')
+
+    # Duration between end of exercise and beginning of scheduled shower.
+    # Defaults to immediately after exercise.
+    exercise_shower_delta = models.DurationField(default=timedelta())
+
+    # Duration of exercise shower.  Defaults to 30 minutes.
+    exercise_shower_duration = models.DurationField(default=timedelta(minutes=30))
