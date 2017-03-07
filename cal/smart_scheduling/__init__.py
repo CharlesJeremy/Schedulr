@@ -1,8 +1,12 @@
 import datetime
 from datetime import timedelta
 
-from .models import Event
-from .utils import daterange
+import simplejson
+
+from cal.models import Event
+from cal.utils import daterange
+from cal.smart_scheduling.utils import exercise_blocks
+import cal.smart_scheduling.signals
 
 
 DEFAULT_SHOWER_DURATION = timedelta(minutes=30)
@@ -12,41 +16,26 @@ BED_TIME_LIMIT = datetime.time(hour=3)
 
 def _schedule_showers(prefs, start_dt, end_dt, events):
     """ Schedules shower events for user. """
-    shower_events = []
-
-    # First, schedule a showers after each exercise block.
-    block_start_event = None
-    block_end_event = None
-
-    events_with_dummy_exercise = events + [Event(event_type=Event.EXERCISE,
-        start_time=datetime.datetime.max, end_time=datetime.datetime.max)]
+    shower_events_exercise = [] # List of Event objects.
+    shower_events_bed = [] # List of Event objects.
 
     # User preferences.
     exercise_shower_delta = prefs.exercise_shower_delta
     exercise_shower_duration = prefs.exercise_shower_duration
 
-    for event in events_with_dummy_exercise:
-        if event.event_type != Event.EXERCISE:
-            continue
-
-        if block_start_event is None:
-            assert block_end_event is None
-            block_start_event = block_end_event = event
-        elif event.start_time - block_end_event.end_time <= timedelta(hours=1):
-            # Put the current event in the same exercise block.
-            block_end_event = event
-        else:
+    # First, schedule a showers after each exercise block.
+    for exercise_block in exercise_blocks(events):
+        block_start_event, block_end_event = exercise_block[0], exercise_block[-1]
+        if not block_end_event.dont_smart_schedule:
             # The previous exercise block has ended; schedule a shower.
             # TODO(zhangwen): what if there's a conflict?
             shower_start_time = block_end_event.end_time + exercise_shower_delta
             shower_event = Event(name="Shower (exercise)",
                     start_time=shower_start_time,
                     end_time=shower_start_time + exercise_shower_duration,
-                    event_type=Event.SHOWER)
-            shower_events.append(shower_event)
-
-            # Start a new exercise block.
-            block_start_event = block_end_event = event
+                    event_type=Event.SHOWER,
+                    smart_scheduled_for=block_end_event)
+            shower_events_exercise.append(shower_event)
 
     # Then, schedule before-bed shower (at most one per day).
     # By default it takes place at 10pm, but it is postponed if there are events after 10pm.
@@ -71,7 +60,7 @@ def _schedule_showers(prefs, start_dt, end_dt, events):
             shower_start_dt = datetime.datetime.combine(date, DEFAULT_BED_SHOWER_TIME)
 
         # Make sure you haven't showered too recently already.
-        prev_showers = [e for e in events + shower_events
+        prev_showers = [e for e in events + shower_events_exercise + shower_events_bed
                 if e.event_type == Event.SHOWER and e.start_time <= shower_start_dt]
         if prev_showers:
             prev_shower = max(prev_showers, key=lambda e: e.end_time)
@@ -81,18 +70,34 @@ def _schedule_showers(prefs, start_dt, end_dt, events):
         shower_event = Event(name="Shower (bed time)", start_time=shower_start_dt,
                 end_time=shower_start_dt + DEFAULT_SHOWER_DURATION,
                 event_type=Event.SHOWER)
-        shower_events.append(shower_event)
+        shower_events_bed.append(shower_event)
 
-    return shower_events
+    shower_event_dicts = []
+    for shower_for_exercise in shower_events_exercise:
+        event_dict = shower_for_exercise.to_dict()
+        event_dict.update({
+            'schedule_type': 'shower_exercise',
+            'smart_id': shower_for_exercise.smart_scheduled_for.id,
+        })
+        shower_event_dicts.append(event_dict)
+
+    for shower_bed in shower_events_bed:
+        event_dict = shower_bed.to_dict()
+        event_dict.update({
+            'schedule_type': 'shower_bed'
+        })
+        shower_event_dicts.append(event_dict)
+
+    return shower_event_dicts
 
 
 def schedule(user, start_dt, end_dt, events):
     """
-    Returns a list of smart-scheduled events based on existing events and user's preferences.
+    Returns a JSON list of smart-scheduled events based on existing events and user's preferences.
     
     `events` is sorted by (start_time, end_time).
     """
-    scheduled_events = []
-    scheduled_events.extend(_schedule_showers(
+    scheduled_event_dicts = []
+    scheduled_event_dicts.extend(_schedule_showers(
         user.scheduling_prefs, start_dt, end_dt, events))
-    return scheduled_events
+    return simplejson.dumps(scheduled_event_dicts)

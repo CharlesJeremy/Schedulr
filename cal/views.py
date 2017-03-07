@@ -234,10 +234,8 @@ def get_smart_scheduling_feed(request):
     end_dt = form.cleaned_data['end']
     events = list(get_events_in_range(request.user, start_dt, end_dt))
 
-    scheduled_events = smart_schedule(request.user, start_dt, end_dt, events)
-    json_events = [e.to_dict() for e in scheduled_events]
-    json = simplejson.dumps(json_events)
-    return HttpResponse(json, content_type='application/json')
+    json_scheduled_events = smart_schedule(request.user, start_dt, end_dt, events)
+    return HttpResponse(json_scheduled_events, content_type='application/json')
 
 @ajax_login_required
 def get_event_feed(request):
@@ -466,5 +464,30 @@ def autocomplete_course(request):
     user_input = request.GET.get('term', "")
     courses = search_courses(user_input)
     json = simplejson.dumps([ unicode(course) for course in courses ])
+    return HttpResponse(json, content_type='application/json')
+
+
+@ajax_login_required
+@require_POST
+@transaction.atomic
+def edit_smart_event_shower_exercise(request, scheduled_for_id):
+    exercise_event = get_object_or_404(Event, user=request.user, id=int(scheduled_for_id))
+
+    form = EventForm(request.POST)
+    if not form.is_valid():
+        return HttpJsonResponseBadRequest(form.errors)
+
+    shower_event = form.save(commit=False)
+    shower_event.user = request.user
+    shower_event.smart_schedule_info = { 'type': 'shower_exercise' }
+    shower_event.smart_scheduled_for = exercise_event
+    shower_event.save()
+
+    # User takes control of shower event; we no longer auto schedule shower
+    # for this exercise event.
+    exercise_event.dont_smart_schedule = True
+    exercise_event.save()
+
+    json = simplejson.dumps({'success': 'true', 'id': shower_event.id})
     return HttpResponse(json, content_type='application/json')
 

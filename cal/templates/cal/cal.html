@@ -168,6 +168,24 @@
         }
       });
 
+      /* Returns calEvent info as JS object. */
+      function get_info_from_calEvent(calEvent) {
+        var info = {
+          name: calEvent.title,
+          start_time: calEvent.start.format(DATETIME_FORMAT),
+          end_time: calEvent.end.format(DATETIME_FORMAT),
+        };
+
+        if (calEvent.event_type) {
+          info.event_type = calEvent.event_type;
+        }
+        if (calEvent.color !== undefined) {
+          info.color = calEvent.color;
+        }
+
+        return info;
+      }
+
       $('#calendar').fullCalendar({
         height: 'parent',
         nowIndicator: true,
@@ -177,10 +195,6 @@
           right: 'agendaWeek,agendaDay,month'
         },
         eventClick: function(calEvent, jsEvent, view) {
-          if (calEvent.source.editable === false) {
-            return false;
-          }
-
           var editEventForm = $('#editEventForm');
           reset_error_ui(editEventForm);
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
@@ -212,7 +226,13 @@
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
             var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
 
-            $.post('/cal/edit_event_abs/' + calEvent.id,
+            var url;
+            if (calEvent.schedule_type === undefined) { // Just an ordinary event.
+              url = '/cal/edit_event_abs/' + calEvent.id;
+            } else { // A smart-scheduled event.
+              url = '/cal/edit_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
+            }
+            $.post(url,
                 { name: title, 
                   start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
                   end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
@@ -244,7 +264,6 @@
           {
             url: '/cal/get_smart_scheduling_feed',
             className: 'smart-scheduled-event',
-            editable: false,
           }
         ],
         defaultView: 'agendaWeek',
@@ -304,9 +323,17 @@
           $('#createEventDialog').dialog('open');
         },
         eventResize: function(calEvent, delta, revertFunc) {
-          $.post('/cal/edit_event_rel/' + calEvent.id,
-            { duration_delta: delta.asSeconds() }
-          ).done(function(data) {
+          var post_params = get_info_from_calEvent(calEvent);
+          $.extend(post_params, { duration_delta: delta.asSeconds() });
+
+          var url;
+          if (calEvent.schedule_type === undefined) { // Just an ordinary event.
+            url = '/cal/edit_event_rel/' + calEvent.id;
+          } else { // A smart-scheduled event.
+            url = '/cal/edit_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
+          }
+
+          $.post(url, post_params).done(function(data) {
             $('#calendar').fullCalendar('refetchEvents');
             $('#dialog').dialog("close");
             $('#createEventDialog').dialog("close");
@@ -316,9 +343,17 @@
           });
         },
         eventDrop: function(calEvent, delta, revertFunc) {
-          $.post('/cal/edit_event_rel/' + calEvent.id,
-            { name: calEvent.title, time_delta: delta.asSeconds() }
-          ).done(function(data) {
+          var post_params = get_info_from_calEvent(calEvent);
+          $.extend(post_params, { time_delta: delta.asSeconds() });
+
+          var url;
+          if (calEvent.schedule_type === undefined) { // Just an ordinary event.
+            url = '/cal/edit_event_rel/' + calEvent.id;
+          } else { // A smart-scheduled event.
+            url = '/cal/edit_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
+          }
+
+          $.post(url, post_params).done(function(data) {
             $('#calendar').fullCalendar('refetchEvents');
             $('#dialog').dialog("close");
           }).fail(function(jqXHR, textStatus, errorThrown) {
