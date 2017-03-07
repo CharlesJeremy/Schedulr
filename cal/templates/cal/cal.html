@@ -250,7 +250,14 @@
           });
 
           $('#deleteEventBtn').click(function() {
-            $.post('/cal/delete_event/' + calEvent.id, function() {
+            var url;
+            if (calEvent.schedule_type === undefined) { // Just an ordinary event.
+              url = '/cal/delete_event/' + calEvent.id;
+            } else { // A smart-scheduled event.
+              url = '/cal/delete_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
+            }
+
+            $.post(url, function() {
               $('#calendar').fullCalendar('refetchEvents');
             });
             $('#dialog').dialog("close");

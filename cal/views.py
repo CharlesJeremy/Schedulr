@@ -497,3 +497,13 @@ def edit_smart_event_shower_exercise(request, scheduled_for_id):
     json = simplejson.dumps({'success': 'true', 'id': shower_event.id})
     return HttpResponse(json, content_type='application/json')
 
+@ajax_login_required
+@require_POST
+def delete_smart_event_shower_exercise(request, scheduled_for_id):
+    exercise_event = get_object_or_404(Event, user=request.user, id=int(scheduled_for_id))
+    # Just mark it as "don't schedule".
+    exercise_event.dont_smart_schedule=True
+    exercise_event.save()
+
+    json = simplejson.dumps({'success': 'true'})
+    return HttpResponse(json, content_type='application/json')
