@@ -101,3 +101,33 @@ def schedule(user, start_dt, end_dt, events):
     scheduled_event_dicts.extend(_schedule_showers(
         user.scheduling_prefs, start_dt, end_dt, events))
     return simplejson.dumps(scheduled_event_dicts)
+
+
+def update_smart_scheduling_prefs(event, duration_changed=True, time_changed=True):
+    """ Updates user's smart scheduling preferences, if applicable. """
+    # For showers scheduled for exercises.
+    if (event.smart_schedule_info and event.smart_schedule_info.get('type') ==
+            'shower_exercise'):
+        prefs = event.user.scheduling_prefs
+
+        delta_to_exercise = timedelta(seconds=event.smart_schedule_info['delta_s'])
+        shower_duration = event.end_time - event.start_time
+
+        # Process delta_to_exercise.
+        if time_changed:
+            if delta_to_exercise != prefs.exercise_shower_delta:
+                if delta_to_exercise == prefs.candidate_exercise_shower_delta:
+                    # Happened twice, save it.
+                    prefs.exercise_shower_delta = delta_to_exercise
+            prefs.candidate_exercise_shower_delta = delta_to_exercise
+
+        # Process shower_duration
+        if duration_changed:
+            if shower_duration != prefs.exercise_shower_duration:
+                if shower_duration == prefs.candidate_exercise_shower_duration:
+                    # Happened twice, save it.
+                    prefs.exercise_shower_duration = shower_duration
+            prefs.candidate_exercise_shower_duration = shower_duration
+
+        prefs.save()
+

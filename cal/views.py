@@ -23,6 +23,7 @@ from oauth2client import client
 from .forms import DateRangeForm, EventForm, EditEventFormDelta
 from .models import Event
 from .smart_scheduling import schedule as smart_schedule
+from .smart_scheduling import update_smart_scheduling_prefs
 from .utils import daterange, next_weekday
 from courses.models import Course, Section
 from courses.utils import Quarter
@@ -293,6 +294,7 @@ def edit_event_abs(request, event_id):
     section = event.section
     if section is None: # Just update this event.
         form.save()
+        update_smart_scheduling_prefs(event)
     else: # Update all events associated with this section.
         new_start_time = form.cleaned_data['start_time']
         new_end_time = form.cleaned_data['end_time']
@@ -337,6 +339,9 @@ def edit_event_rel(request, event_id):
         event.start_time += time_delta
         event.end_time = event.start_time + old_duration + duration_delta
         event.save()
+        update_smart_scheduling_prefs(event,
+                duration_changed='resize' in request.GET,
+                time_changed='drop' in request.GET)
 
     json = simplejson.dumps({'success': 'true'})
     return HttpResponse(json, content_type='application/json')
@@ -482,6 +487,7 @@ def edit_smart_event_shower_exercise(request, scheduled_for_id):
     shower_event.smart_schedule_info = { 'type': 'shower_exercise' }
     shower_event.smart_scheduled_for = exercise_event
     shower_event.save()
+    update_smart_scheduling_prefs(shower_event)
 
     # User takes control of shower event; we no longer auto schedule shower
     # for this exercise event.

@@ -124,3 +124,8 @@ class SmartSchedulingPrefs(models.Model):
 
     # Duration of exercise shower.  Defaults to 30 minutes.
     exercise_shower_duration = models.DurationField(default=timedelta(minutes=30))
+
+    # Candidates; if the user specifies the same preference twice, that preference gets saved.
+    candidate_exercise_shower_delta = models.DurationField(null=True, editable=False)
+    candidate_exercise_shower_duration = models.DurationField(null=True, editable=False)
+

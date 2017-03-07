@@ -328,7 +328,7 @@
 
           var url;
           if (calEvent.schedule_type === undefined) { // Just an ordinary event.
-            url = '/cal/edit_event_rel/' + calEvent.id;
+            url = '/cal/edit_event_rel/' + calEvent.id + "?resize=resize";
           } else { // A smart-scheduled event.
             url = '/cal/edit_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
           }
@@ -348,7 +348,7 @@
 
           var url;
           if (calEvent.schedule_type === undefined) { // Just an ordinary event.
-            url = '/cal/edit_event_rel/' + calEvent.id;
+            url = '/cal/edit_event_rel/' + calEvent.id + "?drop=drop";
           } else { // A smart-scheduled event.
             url = '/cal/edit_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
           }
