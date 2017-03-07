@@ -26,6 +26,19 @@
     
 
     <script type="text/javascript">
+      var event_type_choices = {
+        {% for key, value in event_type_choices %}
+          {{ key|default:"null" }}: "{{ value }}",
+        {% endfor %}
+      };
+
+      var message_list = [];
+      {% for message in messages %}
+      message_list.push({ msg: "{{ message|escapejs }}", tags: "{{ message.tags }}" });
+      {% endfor %}
+    </script>
+
+    <script type="text/javascript">
     var DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:SS';
 
     function reset_error_ui(form) {
@@ -50,9 +63,11 @@
       }
     }
 
-    function add_course() {
+    function add_course(course_str) {
       var course_str_box = $('#course_str');
-      var course_str = course_str_box.val();
+      if (course_str === undefined) {
+        course_str = course_str_box.val();
+      }
       if (!course_str) {
         course_str_box.notify('Please enter search string!', { 'position': 'bottom' });
         return;
@@ -64,6 +79,8 @@
 
         if (data.error) {
           $.notify('Course "' + course_str + '" not found.');
+        } else if (data.sections.length == 0) {
+          $.notify('Course "' + course_str + '" is not offered this quarter.');
         } else {
           $('#course_title').text(data.course_title);
           var sections_div = $('#sections_div');
@@ -89,6 +106,25 @@
       }, 'json');
     }
 
+    function initialize_edit_auto_event_dialog() {
+      var autoEventForm = $('#edit-auto-event');
+      reset_error_ui(autoEventForm);
+      $('#edit_auto_event_dialog').dialog('open');    }
+
+    // TODO (backend): When the user clicks submit btn in the edit_auto_event_dialog, send
+    // data to the backend to update the default start/end/color for auto 
+    // generated events
+    function edit_auto_event_submit() {
+      var event_type_select = $('#edit-auto-event').find('#id_event_type');
+      var event_type = event_type_select.val();
+      if (event_type != "") {
+        var start_time = $('#autoStartTimePicker').timepicker('getTime', new Date());
+        var end_time = $('#autoEndTimePicker').timepicker('getTime', new Date());
+
+        //TODO: post to backend, add color picker
+      }
+    }
+
     $(document).ajaxError(function(event, request, settings) {
       if (request.readyState == 0) {
         $.notify("Connection failed. Please check your internet connection.");
@@ -100,16 +136,13 @@
     });
 
     $(document).ready(function() {
-      /*
-      $("#add-course-btn").button({
-        text: false,
-        icon: "ui-icon-plusthick",
-      });
-      */
-
       $.notify.defaults({
         className: 'info',
         globalPosition: 'top center',
+      });
+
+      $.each(message_list, function(_, value) {
+        $.notify(value.msg, value.tags);
       });
 
       /* Set up CSRF token for AJAX requests. */
@@ -127,6 +160,14 @@
         }
       });
 
+      $('#course_str').autocomplete({
+        source: '{% url "cal:autocomplete_course" %}',
+        select: function(event, ui) {
+          add_course(ui.item.value);
+          return true;
+        }
+      });
+
       $('#calendar').fullCalendar({
         height: 'parent',
         nowIndicator: true,
@@ -136,6 +177,10 @@
           right: 'agendaWeek,agendaDay,month'
         },
         eventClick: function(calEvent, jsEvent, view) {
+          if (calEvent.source.editable === false) {
+            return false;
+          }
+
           var editEventForm = $('#editEventForm');
           reset_error_ui(editEventForm);
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
@@ -151,6 +196,8 @@
           $('#colorpicker-edit').spectrum("set", 'red');
           editEventForm.off(); //Remove all previous handlers from the buttons
           $('#deleteEventBtn').off();
+          var event_type_select = editEventForm.find('#id_event_type');
+          event_type_select.val(calEvent.event_type);
 
           editEventForm.submit(function() {
             reset_error_ui(editEventForm);
@@ -159,6 +206,7 @@
             var start_time = $('#startTimePicker').timepicker('getTime', start);
             var endDate = $('#editEventEndDate').datepicker("getDate");
             var end_time = $('#endTimePicker').timepicker('getTime', end);
+            var event_type = event_type_select.val();
             var color = $('#colorpicker-edit').val();
 
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
@@ -166,9 +214,9 @@
 
             $.post('/cal/edit_event_abs/' + calEvent.id,
                 { name: title, 
-                  start_date: startDate,
                   start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
-                  end_time: moment(new Date(event_end)).format(DATETIME_FORMAT) }
+                  end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
+                  event_type: event_type }
                 ).done(function(data) {
               $('#calendar').fullCalendar('refetchEvents');
               $('#dialog').dialog("close");
@@ -190,13 +238,21 @@
 
           $('#dialog').dialog('open');
         },
-        events: '/cal/get_event_feed', //Fetches events as a json feed from this url
+        eventSources: [
+          '/cal/get_event_feed', //Fetches events as a json feed from this url
+          {
+            url: '/cal/get_smart_scheduling_feed',
+            className: 'smart-scheduled-event',
+            editable: false,
+          }
+        ],
         defaultView: 'agendaWeek',
         navLinks: true,
         selectable: true,
         selectHelper: true,
         select: function(start, end, jsEvent) {
           var createEventForm = $('#createEventForm');
+          createEventForm.find('#id_event_type').val(null);
           reset_error_ui(createEventForm);
 
           $('#createEventTitle').val('');
@@ -220,6 +276,7 @@
             var start_time = $('#createEventStartTimePicker').timepicker('getTime', start);
             var endDate = $('#createEventEndDate').datepicker("getDate");
             var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
+            var event_type = createEventForm.find('#id_event_type').val();
             var color = $('#colorpicker-create').val();
 
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
@@ -229,6 +286,7 @@
               name: title, 
               start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
               end_time: moment(new Date(event_end)).format(DATETIME_FORMAT)
+              event_type: event_type
             }, function(data) {
               $('#createEventDialog').dialog("close");
               $('#calendar').fullCalendar('unselect');
@@ -245,7 +303,7 @@
         },
         eventResize: function(calEvent, delta, revertFunc) {
           $.post('/cal/edit_event_rel/' + calEvent.id,
-            { name: calEvent.title, duration_delta: delta.asSeconds() }
+            { duration_delta: delta.asSeconds() }
           ).done(function(data) {
             $('#calendar').fullCalendar('refetchEvents');
             $('#dialog').dialog("close");
@@ -277,6 +335,7 @@
         $('#calendar').fullCalendar('unselect');
       }});
       $('#createEventStartDate').datepicker({defaultDate: 0});
+      $('#edit_auto_event_dialog').dialog({ autoOpen: false});
       $('#createEventStartTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#createEventEndDate').datepicker({defaultDate: 0});
       $('#createEventEndTimePicker').timepicker({ 'scrollDefault': 'now' });
@@ -306,7 +365,8 @@
               ['seagreen', 'green', 'turquoise', 'aqua', 'rebeccapurple', 'indigo']
           ]
       });
-
+      $('#autoStartTimePicker').timepicker();
+      $('#autoEndTimePicker').timepicker();
       $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
 
     });
@@ -322,17 +382,38 @@
         <form class="form-add-class" name="enter-class" onsubmit="return false">
           <input name="course_str" type="text" id="course_str" placeholder="Add course by number (e.g. CS103)" />
           <input name="Submit" value="Add course" onclick="add_course()" type="Submit"
-          class="add-course-submit" />
-          <!--<button id="add-course-btn" onclick="add_course()" type="Submit" class="btn
-            btn-default">&nbsp;</button>-->
+                                                                         class="add-course-submit" />
         </form>
 
         <div class="logout-container">
-          <form id="logout_form" action="/accounts/logout/" method="post">
-            {% csrf_token %}
             <p>Welcome, <b>{{ user }}</b>.</p>
-            <p><a href="#" onclick="document.getElementById('logout_form').submit()">Logout</a></p>
-          </form>
+            <p>
+              <ul id="menu"><li>
+                  <div><span class="ui-icon ui-icon-plus"></span>Actions...</div>
+                <ul>
+                  <li><div>
+                      <span class="ui-icon ui-icon-calendar"></span>
+                      <a href="{% url 'cal:export' %}">Export</a>
+                  </div></li>
+                  <li><div>
+                      <span class="ui-icon ui-icon-clipboard"></span>
+                      <a href="#" onclick="initialize_edit_auto_event_dialog()">Auto events</a>
+                    </div></li>
+                  <li><div>
+                    <form id="logout_form" action="/accounts/logout/" method="post">
+                      {% csrf_token %}
+                      <span class="ui-icon ui-icon-arrowthickstop-1-w"></span>
+                      <a href="#" onclick="document.getElementById('logout_form').submit()">Logout</a>
+                    </form>
+                  </div></li>
+                </ul>
+              </li></ul>
+            </p>
+            <script type="text/javascript">
+$( "#menu" ).menu({
+  position: { my: "center top", at: "bottom" }
+});
+            </script>
         </div>
       </div>
 
@@ -355,7 +436,11 @@
             <span class="form-error-text label-end_time" style="display:none"></span>
           </p>
           <p>
-            Event Color: <input id="colorpicker-edit">  
+            Event Color: <input id="colorpicker-edit">
+          </p> 
+          <p>
+            Event type:
+            {{ event_form.event_type }}
           </p>
           <button class="small-button" name="EditEvent" id="editEventBtn" value="Submit" type="Submit"> Submit </button>
           <button class="small-delete-button" name="DeleteEvent" id="deleteEventBtn" type="button"> Delete Event </button>
@@ -381,10 +466,33 @@
             End time: <input type="text" id="createEventEndTimePicker" class="textbox-end_time">
             <span class="form-error-text label-end_time" style="display:none"></span>
           </p>
-           <p>
-            Event Color: <input id="colorpicker-create">  
+          <p>
+            Event Color: <input id="colorpicker-create"> 
+          </p>
+          <p>
+            Event type:
+            {{ event_form.event_type }}
           </p>
           <button class="small-button" name="CreateEvent" value="Submit" type="Submit"> Submit </button>
+        </form>
+      </div>
+ 
+      <div id="edit_auto_event_dialog" style="display: none" title="Edit auto events">
+        <form class="form-edit-auto-event" name="edit-auto-event" id="edit-auto-event" onsubmit="return false">
+          Event type:
+          {{ event_form.event_type }}
+
+          <p>
+            Default start time: <input type="text" id="autoStartTimePicker" class="textbox-start_time">
+            <span class="form-error-text label-start_time" style="display:none"></span>
+          </p>
+
+          <p>
+            Default end time: <input type="text" id="autoEndTimePicker" class="textbox-end_time">
+            <span class="form-error-text label-end_time" style="display:none"></span>
+          </p>
+
+          <input name="Submit" value="Edit auto event" onclick="edit_auto_event_submit()" type="Submit"                                                                       class="edit-auto-event-submit" />
         </form>
       </div>
 

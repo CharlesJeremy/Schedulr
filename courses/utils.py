@@ -19,6 +19,12 @@ class Quarter:
     def parse(quarter_str):
         return Quarter.STR_TO_VAL[quarter_str]
 
+    @staticmethod
+    def to_str(q):
+        for k, v in Quarter.CHOICES:
+            if k == q: return v
+        raise ValueError
+
 
 class DaysOfWeek(object):
     """ Represents an immutable set of days of the week, e.g. [ Mon, Tue, Fri ]. """

@@ -66,6 +66,10 @@ html, body {
   padding-top: 10px;
 }
 
+.form-edit-auto-event {
+  padding-top: 10px;
+}
+
 .logout-container {
   text-align: right;
 }
@@ -76,4 +80,16 @@ html, body {
 
 .logout-container p {
   margin: 0;
+}
+
+.smart-scheduled-event {
+  opacity: 0.5;
+}
+
+.textbox-start_time {
+  width: 70px;
+}
+
+.textbox-end_time {
+  width: 70px;
 }

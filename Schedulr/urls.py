@@ -27,5 +27,7 @@ urlpatterns = [
     url(r'^accounts/', include('registration.urls', namespace='registration')),
     url(r'^admin/', admin.site.urls),
     url(r'^_nested_admin/', include('nested_admin.urls')),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-# TODO(zhangwen): serving static asset--only for development.
+]
+
+if settings.DEBUG: # Serve static asset--only for development.
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

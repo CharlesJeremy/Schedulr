@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Schedulr - Export</title>
+    <link rel='stylesheet' href='{% static "styles.css" %}' />
+  </head>
+
+  <body>
+    <h2>Export course schedule to Google Calendar</h2>
+    <p>
+    The following course sections will be exported to your Google Calendar:</p>
+    <ul>
+      {% for course, sections in sections_for_course.items %}
+        <li>
+          <p>{{ course }}</p>
+          <ul>
+            {% for section in sections %}
+            <li>
+              <p>Section #{{ section.section_number }}:
+                 {{ section.component }} |
+                 {{ section.schedule }}
+                 {% if section.instructors %}
+                 with {{ section.instructors }}
+                 {% endif %}
+              </p>
+            </li>
+            {% endfor %}
+          </ul>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <p>The schedule will be added under a Google Calendar named <b>{{ cal_name }}</b>.</p>
+
+    <form action="{% url 'cal:export_proceed' %}" method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="code" value="{{ code }}" />
+      <input type="hidden" name="cal_name" value="{{ cal_name }}" />
+      <button type="submit">Proceed</button>
+    </form>
+  </body>
+</html>
