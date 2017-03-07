@@ -63,6 +63,23 @@
       }
     }
 
+    function transform_default_color_picker_color(color) {
+      if (color == "hsv(0, 100%, 100%)") {
+        color = 'red';
+      }
+      return color;
+    }
+
+    function get_color_picker_create_color() {
+      var color = $('#colorpicker-create').val();
+      return transform_default_color_picker_color(color);
+    }
+
+    function get_color_picker_edit_color() {
+      var color = $('#colorpicker-edit').val();
+      return transform_default_color_picker_color(color);
+    }
+
     function add_course(course_str) {
       var course_str_box = $('#course_str');
       if (course_str === undefined) {
@@ -187,6 +204,7 @@
       }
 
       $('#calendar').fullCalendar({
+        eventColor: 'red',
         height: 'parent',
         nowIndicator: true,
         header: {
@@ -201,7 +219,6 @@
           if (calEvent.id == undefined) {
             return;
           }
-          
           var editEventForm = $('#editEventForm');
           reset_error_ui(editEventForm);
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
@@ -229,8 +246,7 @@
             var endDate = $('#editEventEndDate').datepicker("getDate");
             var end_time = $('#endTimePicker').timepicker('getTime', end);
             var event_type = event_type_select.val();
-            var color = $('#colorpicker-edit').val();
-
+            var color = get_color_picker_edit_color();
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
             var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
 
@@ -285,6 +301,7 @@
         navLinks: true,
         selectable: true,
         selectHelper: true,
+
         select: function(start, end, jsEvent) {
           var createEventForm = $('#createEventForm');
           createEventForm.find('#id_event_type').val(null);
@@ -299,7 +316,6 @@
           $('#createEventStartDate').datepicker('setDate', start_date_obj); //Defaults to the event's current start date
           $('#createEventEndDate').datepicker('setDate', end_date_obj); //Defaults to the event's current start date
           $('#colorpicker-create').spectrum("set", 'red');
-
           createEventForm.off(); //Remove all previous handlers from the buttons
 
           createEventForm.submit(function() {
@@ -312,8 +328,7 @@
             var endDate = $('#createEventEndDate').datepicker("getDate");
             var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
             var event_type = createEventForm.find('#id_event_type').val();
-            var color = $('#colorpicker-create').val();
-
+            var color = get_color_picker_create_color();
             var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
             var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
 
@@ -322,7 +337,7 @@
               start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
               end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
               event_type: event_type,
-              color: color
+              color: color //TODO: change back
             }, function(data) {
               $('#createEventDialog').dialog("close");
               $('#calendar').fullCalendar('unselect');
