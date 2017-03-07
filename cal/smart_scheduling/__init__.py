@@ -94,8 +94,6 @@ def _schedule_showers(prefs, start_dt, end_dt, events):
 def schedule(user, start_dt, end_dt, events):
     """
     Returns a JSON list of smart-scheduled events based on existing events and user's preferences.
-    
-    `events` is sorted by (start_time, end_time).
     """
     scheduled_event_dicts = []
     scheduled_event_dicts.extend(_schedule_showers(

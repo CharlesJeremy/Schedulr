@@ -5,7 +5,13 @@ from cal.models import Event
 
 
 def exercise_blocks(events):
-    """ Yields list of events in each exercise block.  """
+    """
+    Yields list of events in each exercise block.
+
+    `events` is a list.
+    """
+    events.sort(key=lambda e: (e.start_time, e.end_time))
+
     exercise_block = []
     block_start_event = None
     block_end_event = None
