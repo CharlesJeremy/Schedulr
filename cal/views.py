@@ -300,12 +300,14 @@ def edit_event_abs(request, event_id):
         new_end_time = form.cleaned_data['end_time']
         new_dt = new_end_time - new_start_time
         new_name = form.cleaned_data['name']
+        new_color = form.cleaned_data['color']
         for event in Event.objects.filter(user=request.user, section=section):
             event.name = new_name
             event.start_time = datetime.datetime.combine(
                     event.start_time.date(), new_start_time.time())
             event.end_time = event.start_time + new_dt
             event.event_type = form.cleaned_data['event_type']
+            event.color = new_color
             event.save()
 
     json = simplejson.dumps({'success': 'true'})
