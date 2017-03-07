@@ -285,7 +285,7 @@
             $.post('/cal/add_event', {
               name: title, 
               start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
-              end_time: moment(new Date(event_end)).format(DATETIME_FORMAT)
+              end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
               event_type: event_type
             }, function(data) {
               $('#createEventDialog').dialog("close");
