@@ -186,6 +186,7 @@
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
           var start = calEvent.start.local().toDate();
           var end = calEvent.end.local().toDate();
+          var color = calEvent.color;
 
           $('#startTimePicker').timepicker('setTime', start); //Defaults to the event's current start time
           $('#endTimePicker').timepicker('setTime', end);
@@ -193,7 +194,7 @@
           $('#editEventStartDate').datepicker('setDate', start); //Defaults to the event's current start date
           $('#editEventEndDate').datepicker('setDate', end); //Defaults to the event's current start date
       
-          $('#colorpicker-edit').spectrum("set", 'red');
+          $('#colorpicker-edit').spectrum("set", color);
           editEventForm.off(); //Remove all previous handlers from the buttons
           $('#deleteEventBtn').off();
           var event_type_select = editEventForm.find('#id_event_type');
@@ -361,7 +362,6 @@
           showPaletteOnly: true,
           showPalette:true,
           hideAfterPaletteSelect:true,
-          color: 'red',
           palette: [
               ['hotpink', 'crimson', 'red', 'orangered', 'coral', 'yellow'],
               ['seagreen', 'green', 'turquoise', 'aqua', 'rebeccapurple', 'indigo']
