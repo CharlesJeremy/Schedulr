@@ -195,6 +195,13 @@
           right: 'agendaWeek,agendaDay,month'
         },
         eventClick: function(calEvent, jsEvent, view) {
+          // If event has not been completely created yet (e.g., user clicked
+          // on the event placeholder during creation but before clicking submit),
+          // don't do anything
+          if (calEvent.id == undefined) {
+            return;
+          }
+          
           var editEventForm = $('#editEventForm');
           reset_error_ui(editEventForm);
           $('#editEventTitle').val(calEvent.title); //Defaults to the event's title
