@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     'courses',
     'cal',
     'registration',
+    'deploy',
 
     'annoying',
     'nested_admin',

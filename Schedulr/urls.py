@@ -25,6 +25,7 @@ urlpatterns = [
     url(r'^$', lambda r: HttpResponseRedirect('cal/')),
     url(r'^cal/', include('cal.urls', namespace='cal')),
     url(r'^accounts/', include('registration.urls', namespace='registration')),
+    url(r'^deploy/', include('deploy.urls')),
     url(r'^admin/', admin.site.urls),
     url(r'^_nested_admin/', include('nested_admin.urls')),
 ]
