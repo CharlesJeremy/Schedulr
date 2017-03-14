@@ -93,3 +93,7 @@ html, body {
 .textbox-end_time {
   width: 70px;
 }
+
+.textbox-date {
+  width: 100px;
+}
