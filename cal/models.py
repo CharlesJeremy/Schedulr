@@ -121,6 +121,7 @@ class SmartSchedulingPrefs(models.Model):
             related_name='scheduling_prefs')
 
     bed_shower_time = models.TimeField(default=datetime.time(hour=22))
+    bed_shower_duration = models.DurationField(default=timedelta(minutes=30))
 
     # Duration between end of exercise and beginning of scheduled shower.
     # Defaults to immediately after exercise.

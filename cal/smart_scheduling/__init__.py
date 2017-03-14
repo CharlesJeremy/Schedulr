@@ -9,7 +9,6 @@ from cal.smart_scheduling.utils import exercise_blocks
 import cal.smart_scheduling.signals
 
 
-DEFAULT_SHOWER_DURATION = timedelta(minutes=30)
 BED_TIME_LIMIT = datetime.time(hour=3)
 
 
@@ -22,6 +21,7 @@ def _schedule_showers(prefs, start_dt, end_dt, events):
     exercise_shower_delta = prefs.exercise_shower_delta
     exercise_shower_duration = prefs.exercise_shower_duration
     bed_shower_time = prefs.bed_shower_time
+    bed_shower_duration = prefs.bed_shower_duration
 
     # First, schedule a showers after each exercise block.
     for exercise_block in exercise_blocks(events):
@@ -68,7 +68,7 @@ def _schedule_showers(prefs, start_dt, end_dt, events):
                 continue
 
         shower_event = Event(name="Shower (bed time)", start_time=shower_start_dt,
-                end_time=shower_start_dt + DEFAULT_SHOWER_DURATION,
+                end_time=shower_start_dt + bed_shower_duration,
                 event_type=Event.SHOWER)
         shower_events_bed.append(shower_event)
 
