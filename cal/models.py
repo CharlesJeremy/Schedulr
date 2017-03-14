@@ -8,6 +8,8 @@ from annoying.fields import AutoOneToOneField, JSONField
 from courses.models import Section
 from django.contrib.auth.models import User
 
+import datetime
+
 class Event(models.Model):
     """ An event in the calendar.  A repeated event is modeled as multiple Event objects. """
     DEFAULT = ''
@@ -117,6 +119,8 @@ class SmartSchedulingPrefs(models.Model):
     """
     user = AutoOneToOneField(User, on_delete=models.CASCADE, primary_key=True,
             related_name='scheduling_prefs')
+
+    bed_shower_time = models.TimeField(default=datetime.time(hour=22))
 
     # Duration between end of exercise and beginning of scheduled shower.
     # Defaults to immediately after exercise.
