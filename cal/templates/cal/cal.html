@@ -128,18 +128,20 @@
       reset_error_ui(autoEventForm);
       $('#edit_auto_event_dialog').dialog('open');    }
 
-    // TODO (backend): When the user clicks submit btn in the edit_auto_event_dialog, send
-    // data to the backend to update the default start/end/color for auto 
-    // generated events
-    function edit_auto_event_submit() {
-      var event_type_select = $('#edit-auto-event').find('#id_event_type');
-      var event_type = event_type_select.val();
-      if (event_type != "") {
-        var start_time = $('#autoStartTimePicker').timepicker('getTime', new Date());
-        var end_time = $('#autoEndTimePicker').timepicker('getTime', new Date());
 
-        //TODO: post to backend, add color picker
-      }
+    function edit_auto_event_submit() {
+      var start_time = $('#autoStartTimePicker').timepicker('getTime', new Date());
+      var end_time = $('#autoEndTimePicker').timepicker('getTime', new Date());
+      $.post('/cal/edit_smart_scheduling_defaults',
+        { start_time: start_time,
+          end_time: end_time 
+        }, function(data) {
+          $('#calendar').fullCalendar('refetchEvents');
+          $('#dialog').dialog("close");
+        }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
+          display_form_errors(jqXHR.responseText, editEventForm,
+            "Edit smart scheduling defaults failed. Please retry.");
+      });
     }
 
     $(document).ajaxError(function(event, request, settings) {

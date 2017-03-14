@@ -346,6 +346,30 @@ def edit_event_rel(request, event_id):
     json = simplejson.dumps({'success': 'true'})
     return HttpResponse(json, content_type='application/json')
 
+@require_POST
+@ajax_login_required
+@transaction.atomic
+def edit_smart_scheduling_defaults(request):
+    form = EventForm(request.POST)
+    if not form.is_valid():
+        return HttpJsonResponseBadRequest(form.errors)
+    new_start_time = form.cleaned_data['start_time']
+    new_end_time = form.cleaned_data['end_time']
+    new_dt = new_end_time - new_start_time
+    prefs = request.user.scheduling_prefs
+    prefs.bed_shower_time = new_start_time
+    prefs.bed_shower_duration = new_dt
+    prefs.save()
+    for event in Event.objects.filter(user=request.user).exclude(smart_schedule_info=None):
+        if event.smart_schedule_info.get('type') == 'shower_bed':
+            event.start_time = datetime.datetime.combine(
+                    event.start_time.date(), new_start_time.time())
+            event.end_time = event.start_time + new_dt
+            event.save()
+
+    json = simplejson.dumps({'success': 'true'})
+    return HttpResponse(json, content_type='application/json')
+
 CLIENT_SECRET_FILE = 'secrets/client_secret.json'
 
 @login_required

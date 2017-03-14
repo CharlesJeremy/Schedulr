@@ -20,4 +20,5 @@ urlpatterns = [
             views.edit_smart_event_shower_exercise),
         url(r'^delete_smart_event/shower_exercise/(?P<scheduled_for_id>\d+)$',
             views.delete_smart_event_shower_exercise),
+        url(r'^edit_smart_scheduling_defaults$', views.edit_smart_scheduling_defaults, name='edit_smart_scheduling_defaults')
 ]
