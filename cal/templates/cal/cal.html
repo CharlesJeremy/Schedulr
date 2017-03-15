@@ -130,11 +130,12 @@
 
 
     function edit_auto_event_submit() {
-      var start_time = $('#autoStartTimePicker').timepicker('getTime', new Date());
-      var end_time = $('#autoEndTimePicker').timepicker('getTime', new Date());
+      // TODO: how to extract just the time since the model is a TimeField...
+      var bed_shower_start_time = $('#autoStartTimePicker').timepicker('getTime');
+      var bed_shower_end_time = $('#autoEndTimePicker').timepicker('getTime');
       $.post('/cal/edit_smart_scheduling_defaults',
-        { start_time: start_time,
-          end_time: end_time 
+        { bed_shower_start_time: bed_shower_start_time,
+          bed_shower_end_time: bed_shower_end_time 
         }, function(data) {
           $('#calendar').fullCalendar('refetchEvents');
           $('#dialog').dialog("close");

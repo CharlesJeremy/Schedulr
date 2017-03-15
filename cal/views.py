@@ -20,7 +20,7 @@ from django.views.decorators.http import require_POST
 import httplib2
 from oauth2client import client
 
-from .forms import DateRangeForm, EventForm, EditEventFormDelta
+from .forms import DateRangeForm, EventForm, EditEventFormDelta, SmartSchedPrefsForm
 from .models import Event
 from .smart_scheduling import schedule as smart_schedule
 from .smart_scheduling import update_smart_scheduling_prefs
@@ -350,11 +350,11 @@ def edit_event_rel(request, event_id):
 @ajax_login_required
 @transaction.atomic
 def edit_smart_scheduling_defaults(request):
-    form = EventForm(request.POST)
+    form = SmartSchedPrefsForm(request.POST)
     if not form.is_valid():
         return HttpJsonResponseBadRequest(form.errors)
-    new_start_time = form.cleaned_data['start_time']
-    new_end_time = form.cleaned_data['end_time']
+    new_start_time = form.cleaned_data['bed_shower_start_time']
+    new_end_time = form.cleaned_data['bed_shower_end_time']
     new_dt = new_end_time - new_start_time
     prefs = request.user.scheduling_prefs
     prefs.bed_shower_time = new_start_time

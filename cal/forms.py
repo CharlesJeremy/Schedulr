@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django import forms
 
-from .models import Event
+from .models import Event, SmartSchedulingPrefs
 
 
 class IntervalSecondsField(forms.IntegerField):
@@ -44,4 +44,10 @@ class EditEventFormDelta(forms.ModelForm):
 class DateRangeForm(forms.Form):
     start = forms.DateField()
     end = forms.DateField()
+
+class SmartSchedPrefsForm(forms.ModelForm):
+    class Meta:
+        model = SmartSchedulingPrefs
+        fields = ['bed_shower_start_time', 'bed_shower_end_time']
+
 
