@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django import forms
 
-from .models import Event
+from .models import Event, SmartSchedulingPrefs
 
 
 class IntervalSecondsField(forms.IntegerField):
@@ -44,4 +44,21 @@ class EditEventFormDelta(forms.ModelForm):
 class DateRangeForm(forms.Form):
     start = forms.DateField()
     end = forms.DateField()
+
+class SmartSchedPrefsForm(forms.ModelForm):
+    class Meta:
+        model = SmartSchedulingPrefs
+        fields = ['bed_shower_start_time', 'bed_shower_end_time']
+
+    def __init__(self, *args, **kwargs):
+        super(SmartSchedPrefsForm, self).__init__(*args, **kwargs)
+        self.fields['bed_shower_start_time'].required = True
+        self.fields['bed_shower_end_time'].required = True
+
+    def clean(self):
+        cleaned_data = super(SmartSchedPrefsForm, self).clean()
+        bed_shower_start_time = cleaned_data.get('bed_shower_start_time')
+        bed_shower_end_time = cleaned_data.get('bed_shower_end_time')
+        if bed_shower_start_time and bed_shower_end_time and bed_shower_start_time > bed_shower_end_time:
+            self.add_error('bed_shower_end_time', "End time must be later than start time.")
 

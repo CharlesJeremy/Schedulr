@@ -32,6 +32,12 @@
         {% endfor %}
       };
 
+      // I know, this is really hacky...
+      var current_bed_shower_start_time =
+        moment("2017-03-16T{{ user.scheduling_prefs.bed_shower_start_time|date:'c' }}");
+      var current_bed_shower_end_time =
+        moment("2017-03-16T{{ user.scheduling_prefs.bed_shower_end_time|date:'c' }}");
+
       var message_list = [];
       {% for message in messages %}
       message_list.push({ msg: "{{ message|escapejs }}", tags: "{{ message.tags }}" });
@@ -40,6 +46,7 @@
 
     <script type="text/javascript">
     var DATETIME_FORMAT = 'YYYY-MM-DD HH:mm:SS';
+    var TIME_FORMAT = 'HH:mm:SS';
 
     function reset_error_ui(form) {
       form.find('input:text').removeClass('ui-state-error');
@@ -126,22 +133,28 @@
     function initialize_edit_auto_event_dialog() {
       var autoEventForm = $('#edit-auto-event');
       reset_error_ui(autoEventForm);
-      $('#edit_auto_event_dialog').dialog('open');    }
-
+      $('#edit_auto_event_dialog').dialog('open');
+    }
 
     function edit_auto_event_submit() {
-      var start_time = $('#autoStartTimePicker').timepicker('getTime', new Date());
-      var end_time = $('#autoEndTimePicker').timepicker('getTime', new Date());
+      var autoEventForm = $('#edit-auto-event');
+      reset_error_ui(autoEventForm);
+      var bed_shower_start_time = moment($('#autoStartTimePicker').timepicker('getTime'));
+      var bed_shower_end_time = moment($('#autoEndTimePicker').timepicker('getTime'));
       $.post('/cal/edit_smart_scheduling_defaults',
-        { start_time: start_time,
-          end_time: end_time 
+        { bed_shower_start_time: bed_shower_start_time.format(TIME_FORMAT),
+          bed_shower_end_time: bed_shower_end_time.format(TIME_FORMAT)
         }, function(data) {
+          current_bed_shower_start_time = bed_shower_start_time;
+          current_bed_shower_end_time = bed_shower_end_time;
+
           $('#calendar').fullCalendar('refetchEvents');
-          $('#dialog').dialog("close");
+          $('#edit_auto_event_dialog').dialog("close");
         }, 'json').fail(function(jqXHR, textStatus, errorThrown) {
-          display_form_errors(jqXHR.responseText, editEventForm,
+          display_form_errors(jqXHR.responseText, autoEventForm,
             "Edit smart scheduling defaults failed. Please retry.");
       });
+      return false;
     }
 
     $(document).ajaxError(function(event, request, settings) {
@@ -434,9 +447,11 @@
           ]
       });
       $('#autoStartTimePicker').timepicker();
+      $('#autoStartTimePicker').timepicker('setTime', current_bed_shower_start_time.local().toDate());
       $('#autoEndTimePicker').timepicker();
-      $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
+      $('#autoEndTimePicker').timepicker('setTime', current_bed_shower_end_time.local().toDate());
 
+      $('#add_course_dialog').dialog({ autoOpen: false, width: "80%" });
     });
     </script>
   </head>
@@ -546,19 +561,22 @@ $( "#menu" ).menu({
       </div>
  
       <div id="edit_auto_event_dialog" style="display: none" title="Edit auto events">
-        <form class="form-edit-auto-event" name="edit-auto-event" id="edit-auto-event" onsubmit="return false">
+        <form class="form-edit-auto-event" name="edit-auto-event" id="edit-auto-event" onsubmit="edit_auto_event_submit()">
           
           <p>
-            Bed shower start time: <input type="text" id="autoStartTimePicker" class="textbox-start_time">
-            <span class="form-error-text label-start_time" style="display:none"></span>
+            Bed shower start time: <input type="text" id="autoStartTimePicker"
+            class="textbox-bed_shower_start_time">
+            <span class="form-error-text label-bed_shower_start_time" style="display:none"></span>
           </p>
 
           <p>
-            Bed shower end time: <input type="text" id="autoEndTimePicker" class="textbox-end_time">
-            <span class="form-error-text label-end_time" style="display:none"></span>
+            Bed shower end time: <input type="text" id="autoEndTimePicker"
+            class="textbox-bed_shower_end_time">
+            <span class="form-error-text label-bed_shower_end_time" style="display:none"></span>
           </p>
 
-          <input name="Submit" value="Edit auto event" onclick="edit_auto_event_submit()" type="Submit"                                                                       class="edit-auto-event-submit" />
+          <input name="Submit" value="Edit auto event" type="Submit"
+          class="edit-auto-event-submit" />
         </form>
       </div>
 
