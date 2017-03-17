@@ -98,6 +98,11 @@ def schedule(user, start_dt, end_dt, events):
     scheduled_event_dicts = []
     scheduled_event_dicts.extend(_schedule_showers(
         user.scheduling_prefs, start_dt, end_dt, events))
+
+    # Assign dummy ids to smart-scheduled events.
+    for i, d in enumerate(scheduled_event_dicts):
+        d['id'] = -(i + 1)
+
     return simplejson.dumps(scheduled_event_dicts)
 
 
