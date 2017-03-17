@@ -10,6 +10,7 @@ import cal.smart_scheduling.signals
 
 
 BED_TIME_LIMIT = datetime.time(hour=3)
+EDITABLE_SCHEDULE_TYPES = ['shower_exercise']
 
 
 def _schedule_showers(prefs, start_dt, end_dt, events):
@@ -102,6 +103,8 @@ def schedule(user, start_dt, end_dt, events):
     # Assign dummy ids to smart-scheduled events.
     for i, d in enumerate(scheduled_event_dicts):
         d['id'] = -(i + 1)
+        if d['schedule_type'] not in EDITABLE_SCHEDULE_TYPES:
+            d['editable'] = False
 
     return simplejson.dumps(scheduled_event_dicts)
 
