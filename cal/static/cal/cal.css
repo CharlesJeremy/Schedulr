@@ -60,10 +60,8 @@ html, body {
 }
 
 .form-error-text {
-  display: block;
   color: red;
   font-size: 0.8em;
-  padding-top: 10px;
 }
 
 .form-edit-auto-event {
@@ -96,4 +94,29 @@ html, body {
 
 .textbox-date {
   width: 100px;
+}
+
+.textbox-time {
+  width: 100px;
+}
+
+.form-table {
+  border-spacing: 0;
+}
+
+.form-table .field-name {
+  text-align: right;
+  font-weight: bold;
+
+  padding-right: 5px;
+}
+
+.form-table .field-input {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.form-table .error-row td {
+  padding: 0;
+  margin: 0;
 }

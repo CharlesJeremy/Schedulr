@@ -22,9 +22,6 @@
     <script src='{% static "cal/jquery.timepicker.min.js" %}'> </script>
     <script src='{% static "cal/spectrum.js" %}'></script>
 
-  
-    
-
     <script type="text/javascript">
       var event_type_choices = {
         {% for key, value in event_type_choices %}
@@ -262,8 +259,22 @@
             var end_time = $('#endTimePicker').timepicker('getTime', end);
             var event_type = event_type_select.val();
             var color = get_color_picker_edit_color();
-            var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
-            var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
+
+            var event_start = "gibberish";
+            if (start_time) {
+              var event_start_str = startDate.toString().substring(0, 3) + ',' +
+                startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +
+                startDate.toString().substring(10, 15) + start_time.toString().substring(15, 24);
+              event_start = moment(new Date(event_start_str)).format(DATETIME_FORMAT)
+            }
+
+            var event_end = "gibberish";
+            if (end_time) {
+              var event_end_str = endDate.toString().substring(0, 3) + ',' +
+                endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +
+                endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
+              event_end = moment(new Date(event_end_str)).format(DATETIME_FORMAT);
+            }
 
             var url;
             if (calEvent.schedule_type === undefined) { // Just an ordinary event.
@@ -272,9 +283,9 @@
               url = '/cal/edit_smart_event/' + calEvent.schedule_type + '/' + calEvent.smart_id;
             }
             $.post(url,
-                { name: title, 
-                  start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
-                  end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
+                { name: title,
+                  start_time: event_start,
+                  end_time: event_end,
                   event_type: event_type,
                   color: color }
                 ).done(function(data) {
@@ -344,13 +355,27 @@
             var end_time = $('#createEventEndTimePicker').timepicker('getTime', end);
             var event_type = createEventForm.find('#id_event_type').val();
             var color = get_color_picker_create_color();
-            var event_start = startDate.toString().substring(0, 3) + ',' + startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +  startDate.toString().substring(10, 15) +   start_time.toString().substring(15, 24);
-            var event_end = endDate.toString().substring(0, 3) + ',' + endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +  endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
+
+            var event_start = "gibberish";
+            if (start_time) {
+              var event_start_str = startDate.toString().substring(0, 3) + ',' +
+                startDate.toString().substring(7, 10) + startDate.toString().substring(3, 7) +
+                startDate.toString().substring(10, 15) + start_time.toString().substring(15, 24);
+              event_start = moment(new Date(event_start_str)).format(DATETIME_FORMAT);
+            }
+
+            var event_end = "gibberish";
+            if (end_time) {
+              var event_end_str = endDate.toString().substring(0, 3) + ',' +
+                endDate.toString().substring(7, 10) + endDate.toString().substring(3, 7) +
+                endDate.toString().substring(10, 15) + end_time.toString().substring(15, 24);
+              event_end = moment(new Date(event_end_str)).format(DATETIME_FORMAT);
+            }
 
             $.post('/cal/add_event', {
               name: title, 
-              start_time: moment(new Date(event_start)).format(DATETIME_FORMAT),
-              end_time: moment(new Date(event_end)).format(DATETIME_FORMAT),
+              start_time: event_start,
+              end_time: event_end,
               event_type: event_type,
               color: color //TODO: change back
             }, function(data) {
@@ -413,7 +438,8 @@
       });
 
      
-      $('#createEventDialog').dialog({ autoOpen: false, close: function() {
+      $('#createEventDialog').dialog({
+        autoOpen: false, width: "310px", close: function() {
         $('#calendar').fullCalendar('unselect');
       }});
       $('#createEventStartDate').datepicker({defaultDate: 0});
@@ -432,7 +458,7 @@
           ]
       });
 
-      $('#dialog').dialog({ autoOpen: false });
+      $('#dialog').dialog({ width: "310px", autoOpen: false });
       $('#editEventStartDate').datepicker({defaultDate: 0});
       $('#startTimePicker').timepicker({ 'scrollDefault': 'now' });
       $('#editEventEndDate').datepicker({defaultDate: 0});
@@ -502,29 +528,59 @@ $( "#menu" ).menu({
 
       <div id="dialog" style="display: none" title="Edit event">
         <form id="editEventForm">
-          <p>
-            Title: <input type="text" id="editEventTitle" class="textbox-name">
-            <span class="form-error-text label-name" style="display:none"></span>
-          </p>
-          <p>
-            Start date: <input type="text" id="editEventStartDate" class="textbox-date">
-            <span class="form-error-text label-date" style="display:none"></span>
-            Start time: <input type="text" id="startTimePicker" class="textbox-start_time">
-            <span class="form-error-text label-start_time" style="display:none"></span>
-          </p>
-          <p>
-            End date: <input type="text" id="editEventEndDate" class="textbox-date">
-            <span class="form-error-text label-date" style="display:none"></span>
-            End time: <input type="text" id="endTimePicker" class="textbox-end_time">
-            <span class="form-error-text label-end_time" style="display:none"></span>
-          </p>
-          <p>
-            Event Color: <input id="colorpicker-edit">
-          </p> 
-          <p>
-            Event type:
-            {{ event_form.event_type }}
-          </p>
+          <table class="form-table">
+            <tr>
+              <td class="field-name">Title</td>
+              <td class="field-input"><input type="text" id="editEventTitle" class="textbox-name"></td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td><span class="form-error-text label-name" style="display:none"></span></td>
+            </tr>
+
+            <tr>
+              <td class="field-name">Start</td>
+              <td class="field-input">
+                <input type="text" id="editEventStartDate" class="textbox-date textbox-start_date">
+                <input type="text" id="startTimePicker" class="textbox-time textbox-start_time">
+              </td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td><span class="form-error-text label-start_date" style="display:none"></span></td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td><span class="form-error-text label-start_time" style="display:none"></span></td>
+            </tr>
+
+            <tr>
+              <td class="field-name">End</td>
+              <td class="field-input">
+                <input type="text" id="editEventEndDate" class="textbox-date textbox-end_date">
+                <input type="text" id="endTimePicker" class="textbox-time textbox-end_time">
+              </td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td><span class="form-error-text label-end_date" style="display:none"></span></td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td><span class="form-error-text label-end_time" style="display:none"></span></td>
+            </tr>
+
+            <tr>
+              <td class="field-name">Color</td>
+              <td class="field-input"><input id="colorpicker-edit"></td>
+            </tr>
+
+            <tr>
+              <td class="field-name">Type</td>
+              <td class="field-input">{{ event_form.event_type }}</td>
+            </tr>
+          </table>
+
           <button class="small-button" name="EditEvent" id="editEventBtn" value="Submit" type="Submit"> Submit </button>
           <button class="small-delete-button" name="DeleteEvent" id="deleteEventBtn" type="button"> Delete Event </button>
         </form>
@@ -532,30 +588,64 @@ $( "#menu" ).menu({
 
       <div id="createEventDialog" style="display: none" title="Create event">
         <form id="createEventForm">
-          <p>
-            Title: <input type="text" id="createEventTitle" class="textbox-name">
-            <span class="form-error-text label-name" style="display:none"></span>
-          </p>
-          <p>
-            Start date: <input type="text" id="createEventStartDate" class="textbox-date">
-            <span class="form-error-text label-date" style="display:none"></span>
-            Start time: <input type="text" id="createEventStartTimePicker"
-              class="textbox-start_time">
-            <span class="form-error-text label-start_time" style="display:none"></span>
-          </p>
-          <p>
-            End Date: <input type="text" id="createEventEndDate" class="textbox-date">
-            <span class="form-error-text label-date" style="display:none"></span>
-            End time: <input type="text" id="createEventEndTimePicker" class="textbox-end_time">
-            <span class="form-error-text label-end_time" style="display:none"></span>
-          </p>
-          <p>
-            Event Color: <input id="colorpicker-create"> 
-          </p>
-          <p>
-            Event type:
-            {{ event_form.event_type }}
-          </p>
+          <table class="form-table">
+            <tr>
+              <td class="field-name">Title</td>
+              <td class="field-input"><input type="text" id="createEventTitle" class="textbox-name" /></td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td><span class="form-error-text label-name" style="display:none"></span></td>
+            </tr>
+
+            <tr>
+              <td class="field-name">Start</td>
+              <td class="field-input">
+                <input type="text" id="createEventStartDate"
+                  class="textbox-date textbox-start_date" />
+                <input type="text" id="createEventStartTimePicker"
+                  class="textbox-time textbox-start_time" />
+              </td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td>
+                <span class="form-error-text label-start_date" style="display:none"></span>
+              </td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td><span class="form-error-text label-start_time" style="display:none"></span></td>
+            </tr>
+
+
+            <tr>
+              <td class="field-name">End</td>
+              <td class="field-input">
+                <input type="text" id="createEventEndDate" class="textbox-date textbox-end_date">
+                <input type="text" id="createEventEndTimePicker" class="textbox-time textbox-end_time">
+              </td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td><span class="form-error-text label-end_date" style="display:none"></span></td>
+            </tr>
+            <tr class="error-row">
+              <td></td>
+              <td><span class="form-error-text label-end_time" style="display:none"></span></td>
+            </tr>
+
+            <tr>
+              <td class="field-name">Color</td>
+              <td class="field-input">
+                <input id="colorpicker-create" />
+              </td>
+            </tr>
+            <tr>
+              <td class="field-name">Type</td>
+              <td class="field-input">{{ event_form.event_type }}</td>
+            </tr>
+          </table>
           <button class="small-button" name="CreateEvent" value="Submit" type="Submit"> Submit </button>
         </form>
       </div>

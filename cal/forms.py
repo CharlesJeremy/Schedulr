@@ -15,6 +15,10 @@ class IntervalSecondsField(forms.IntegerField):
         return timedelta(seconds=value)
 
 class EventForm(forms.ModelForm):
+    # This is a hack.  These two fields are not used; they're only for generating error messages.
+    start_date = forms.DateField(required=False)
+    end_date = forms.DateField(required=False)
+
     class Meta:
         model = Event
         fields = ['name', 'start_time', 'end_time', 'event_type', 'color']
@@ -28,7 +32,10 @@ class EventForm(forms.ModelForm):
         start_time = cleaned_data.get('start_time')
         end_time = cleaned_data.get('end_time')
         if start_time and end_time and (start_time > end_time):
-            self.add_error('end_time', "End time must be later than start time.")
+            if start_time.date() > end_time.date():
+                self.add_error('end_date', "End date must be later than start date.")
+            else:
+                self.add_error('end_time', "End time must be later than start time.")
 
 class EditEventFormDelta(forms.ModelForm):
     class Meta: # start_time and end_time fields might not be used.
