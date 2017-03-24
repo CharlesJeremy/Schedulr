@@ -4,45 +4,6 @@ html, body {
   overflow: hidden;
 }
 
-.box {
-  display: flex;
-  flex-flow: column;
-  height: 100%;
-}
-
-.box .row.header {
-  flex: 0 1 auto;
-  background-color: #eee;
-
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-
-  padding-left: 10px;
-  padding-right: 10px;
-  padding-top: 5px;
-  padding-bottom: 5px;
-}
-
-.box .row.header a {
-  color: blue;
-  text-decoration: none;
-}
-
-.box .row.header .logo-container {
-  height: 50px;
-}
-
-.box .row.header img.logo {
-  height: 100%;
-}
-
-.box .row.content {
-  flex: 1 1 auto;
-  margin: 10px;
-}
-
 .form-add-class {
   margin-left: 25px;
   margin-right: auto;

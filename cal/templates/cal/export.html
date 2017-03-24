@@ -4,40 +4,62 @@
   <head>
     <title>Schedulr - Export</title>
     <link rel='stylesheet' href='{% static "styles.css" %}' />
+    <link rel='stylesheet' href='{% static "cal/export.css" %}' />
   </head>
 
   <body>
-    <h2>Export course schedule to Google Calendar</h2>
-    <p>
-    The following course sections will be exported to your Google Calendar:</p>
-    <ul>
-      {% for course, sections in sections_for_course.items %}
-        <li>
-          <p>{{ course }}</p>
-          <ul>
-            {% for section in sections %}
+    <div class="box">
+      <div class="row header">
+        <div class="logo-container">
+          <a href="/"><img class="logo" src="{% static 'cal/logo.png' %}" /></a>
+        </div>
+
+        <div style="text-align: right">
+            <form id="logout_form" action="/accounts/logout/" method="post">
+              {% csrf_token %}
+              Welcome, <b>{{ user }}</b>.<br />
+              <a href="#" onclick="document.getElementById('logout_form').submit()">Logout</a>
+            </form>
+        </div>
+      </div>
+
+    <div class="row content" style="margin-top: 0">
+      <h2>Export course schedule to Google Calendar</h2>
+      {% if sections_for_course %}
+        <p><i>The following course sections will be exported to your Google Calendar</i>:</p>
+        <ul>
+          {% for course, sections in sections_for_course.items %}
             <li>
-              <p>Section #{{ section.section_number }}:
-                 {{ section.component }} |
-                 {{ section.schedule }}
-                 {% if section.instructors %}
-                 with {{ section.instructors }}
-                 {% endif %}
-              </p>
+              <p>{{ course }}</p>
+              <ul>
+                {% for section in sections %}
+                <li>
+                  <p>Section #{{ section.section_number }}:
+                     {{ section.component }} |
+                     {{ section.schedule }}
+                     {% if section.instructors %}
+                     with {{ section.instructors }}
+                     {% endif %}
+                  </p>
+                </li>
+                {% endfor %}
+              </ul>
             </li>
-            {% endfor %}
-          </ul>
-        </li>
-      {% endfor %}
-    </ul>
+          {% endfor %}
+        </ul>
 
-    <p>The schedule will be added under a Google Calendar named <b>{{ cal_name }}</b>.</p>
+        <p>The schedule will be added under a Google Calendar named <b>{{ cal_name }}</b>.</p>
 
-    <form action="{% url 'cal:export_proceed' %}" method="POST">
-      {% csrf_token %}
-      <input type="hidden" name="code" value="{{ code }}" />
-      <input type="hidden" name="cal_name" value="{{ cal_name }}" />
-      <button type="submit">Proceed</button>
-    </form>
+        <form action="{% url 'cal:export_proceed' %}" method="POST">
+          {% csrf_token %}
+          <input type="hidden" name="code" value="{{ code }}" />
+          <input type="hidden" name="cal_name" value="{{ cal_name }}" />
+          <button type="submit">Proceed</button>
+        </form>
+      {% else %}
+        <p>You have no classes on your schedule! Go <a href="/">back</a> to your calendar to add
+        some classes.<p>
+      {% endif %}
+    </div>
   </body>
 </html>
