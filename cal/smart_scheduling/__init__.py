@@ -21,8 +21,11 @@ def _schedule_showers(prefs, start_dt, end_dt, events):
     # User preferences.
     exercise_shower_delta = prefs.exercise_shower_delta
     exercise_shower_duration = prefs.exercise_shower_duration
+
+    today = datetime.date.today()
     bed_shower_start_time = prefs.bed_shower_start_time
-    bed_shower_end_time = prefs.bed_shower_end_time
+    bed_shower_duration = datetime.datetime.combine(today, prefs.bed_shower_end_time) - \
+        datetime.datetime.combine(today, bed_shower_start_time)
 
     # First, schedule a showers after each exercise block.
     for exercise_block in exercise_blocks(events):
@@ -69,8 +72,7 @@ def _schedule_showers(prefs, start_dt, end_dt, events):
                 continue
 
         shower_event = Event(name="Shower (bed time)", start_time=shower_start_dt,
-                end_time=datetime.datetime.combine(date, bed_shower_end_time),
-                event_type=Event.SHOWER)
+                end_time=shower_start_dt + bed_shower_duration, event_type=Event.SHOWER)
         shower_events_bed.append(shower_event)
 
     shower_event_dicts = []
