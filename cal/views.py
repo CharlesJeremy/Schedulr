@@ -69,7 +69,7 @@ def add_all_events_for_course(user, user_input):
 
 def get_term():
     # Hardcoded for now 
-    return (2016, Quarter.WINTER)
+    return (2016, Quarter.SPRING)
 
 def parse_course_no(user_input):
     """

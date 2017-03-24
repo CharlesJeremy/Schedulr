@@ -110,7 +110,8 @@
             var p = $('<p />').appendTo(sections_div);
 
             var ckbox_id = 'section' + item.section_id;
-            var checked = (item.component == 'LEC');
+            var checked = (item.component != 'DIS' && item.component != 'LAB' &&
+                item.component != 'LBS');
             $('<input />', {
               type: 'checkbox', name: 'sections', id: ckbox_id, value: item.section_id,
               checked: checked
